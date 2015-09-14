@@ -227,7 +227,6 @@ Bone g_bonesRes[kMaxBones]; // Animerat
 ///////////////////////////////////////////////////////
 //		S E T U P  B O N E S
 //
-mat4 Minverse[kMaxBones];
 void setupBones(void)
 {
 	int bone;
@@ -236,11 +235,12 @@ void setupBones(void)
 	{
 		g_bones[bone].pos = SetVector((float) bone * BONE_LENGTH, 0.0f, 0.0f);
 		g_bones[bone].rot = IdentityMatrix();
-		Minverse[bone] = InvertMat4(MultMat4(T((float) bone * BONE_LENGTH,0.0f,0.0f),IdentityMatrix()));
 	}
 }
 
 //
+
+mat4 Minverse[kMaxBones];
 mat4 Mtrans[kMaxBones];
 ///////////////////////////////////////////////////////
 //		D E F O R M  C Y L I N D E R
@@ -254,13 +254,13 @@ void DeformCylinder()
 	mat4 M[kMaxBones];
 	for (int bone = 0; bone < kMaxBones; bone++)
 	{
-		mat4 trans = IdentityMatrix();
-		mat4 inverse = IdentityMatrix();
-		for (int i = 0; i <= bone; i++){
-			inverse = MultMat4(Minverse[i],inverse);
-			trans = MultMat4(trans,Mtrans[i]);
+		mat4 mb = IdentityMatrix();
+		mat4 bm = IdentityMatrix();
+		for (int i = 0; i < bone; i++){
+			mb = MultMat4(Minverse[i],mb);
+			bm = MultMat4(bm,Mtrans[i]);
 		}
-		M[bone] = MultMat4(trans,inverse);
+		M[bone] = MultMat4(bm,mb);
 	}
 
 	int row, corner;
@@ -269,22 +269,11 @@ void DeformCylinder()
 	{
 		for (corner = 0; corner < kMaxCorners; corner++)
 		{
-			g_vertsRes[row][corner] = g_vertsOrg[row][corner];
-			// ---------=========  UPG 4 ===========---------
-			// TODO: skinna meshen mot alla benen.
-			//
-			// data som du kan anv�nda:
-			// g_bonesRes[].rot
-			// g_bones[].pos
-			// g_boneWeights
-			// g_vertsOrg
-			// g_vertsRes
+			g_vertsRes[row][corner] = SetVector(0,0,0);
 			for (int bone = 0; bone < kMaxBones; bone++)
 			{
-				g_vertsRes[row][corner] = VectorAdd(g_vertsRes[row][corner],
-					ScalarMult(MultVec3(M[bone],g_vertsOrg[row][corner]),g_boneWeights[row][corner][bone]));
+				g_vertsRes[row][corner] = VectorAdd(g_vertsRes[row][corner],ScalarMult(MultVec3(M[bone],g_vertsOrg[row][corner]),g_boneWeights[row][corner][bone]));
 			}
-
 		}
 	}
 }
@@ -297,6 +286,7 @@ void DeformCylinder()
 void animateBones(void)
 {
 	int bone;
+	mat4 Mb;
 	// Hur mycket kring varje led? �ndra g�rna.
 	float angleScales[10] = { 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f };
 
@@ -308,10 +298,19 @@ void animateBones(void)
 
 	g_bonesRes[0].rot = Rz(angle * angleScales[0]);
 
+	Mb = T(g_bones[0].pos.x,0,0);
+	Mtrans[0] =MultMat4(Mb,Rz(angle * angleScales[0]));
+	Minverse[0] = InvertMat4(Mb);
+
+
 	for (bone = 1; bone < kMaxBones; bone++){
 		g_bonesRes[bone].rot = Rz(angle * angleScales[bone]);
-		Mtrans[bone] = MultMat4(T((float) bone * BONE_LENGTH,0.0f,0.0f),Rz(angle * angleScales[bone]));
+
+		Mb = T(g_bones[bone].pos.x-g_bones[bone-1].pos.x,g_bones[bone].pos.y-g_bones[bone-1].pos.y,g_bones[bone].pos.z-g_bones[bone-1].pos.z);
+		Mtrans[bone] =MultMat4(Mb,Rz(angle*angleScales[bone]));
+		Minverse[bone] = InvertMat4(Mb);
 	}
+
 }
 
 

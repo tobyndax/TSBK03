@@ -6,11 +6,9 @@ ifeq ($(shell uname), Linux)
   PLATFORM=linux
 endif
 ifeq ($(PLATFORM),mac)
-
-
 #Mac frameworks
 LDFLAGS = -framework GLUT -framework OpenGL -framework Cocoa
-MICRO = Mac/MicroGlut.m
+MICRO = ../common/Mac/MicroGlut.o
 
 endif
 
@@ -23,7 +21,7 @@ endif
 #Compiler flags, enable warnings and c99 standard
 GCCFLAGS = -Wall -std=c99 -I../common
 #Binaries that are needed for all sub-compilations
-BINARIES = ../common/GL_utilities.c ../common/VectorUtils3.c ../common/LoadTGA.c ../common/loadobj.c ../common/zpr.c ../common/MicroGlut.c
+BINARIES = ../common/GL_utilities.c ../common/VectorUtils3.c ../common/LoadTGA.c ../common/loadobj.c ../common/zpr.c $(MICRO)
 
 
 all: skinning2
@@ -32,10 +30,10 @@ all: skinning2
 
 
 skinning: skinning.c $(BINARIES)
-	gcc $(GCCFLAGS) $(BINARIES) skinning.c -o skinning $(LDFLAGS)
+	gcc $(GCCFLAGS) $(BINARIES) skinning.c -o skinning.out $(LDFLAGS)
 
 skinning2: skinning2.c $(BINARIES)
-	gcc $(GCCFLAGS) $(BINARIES) skinning2.c -o skinning2 $(LDFLAGS)
+	gcc $(GCCFLAGS) $(BINARIES) skinning2.c -o skinning2.out $(LDFLAGS)
 
 
 #compile MicroGlut on it’s own and ignore warnings.
