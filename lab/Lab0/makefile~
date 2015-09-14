@@ -1,0 +1,15 @@
+LDFLAGS = -lGL -lm -DGL_GLEXT_PROTOTYPES -lXt -lX11
+#Compiler flags, enable warnings and c99 standard
+GCCFLAGS = -Wall -std=c99
+BINARIES = ../common/GL_utilities.c ../common/VectorUtils3.c ../common/LoadTGA.c ../common/loadobj.c ../common/zpr.c ../common/MicroGlut.c
+LDFLAGS = -lGL -lm -DGL_GLEXT_PROTOTYPES -lXt -lX11
+
+
+all :  lab0
+
+lab0: lab0.c $(BINARIES)
+	gcc $(GCCFLAGS) $(BINARIES) lab0.c -o lab0 $(LDFLAGS) -I../common
+
+clean :
+	rm lab0
+
