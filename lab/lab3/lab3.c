@@ -30,7 +30,7 @@
 // initial width and heights
 #define W 600
 #define H 600
-#define elasticity 1
+#define ELASTICITY 0
 
 #define NEAR 1.0
 #define FAR 100.0
@@ -180,45 +180,25 @@ void updateWorld()
 		ball[i].P.z = abs(ball[i].P.z);
 		if (ball[i].X.z > 1.84146270 - kBallSize)
 		ball[i].P.z = -abs(ball[i].P.z);
+
+		ball[i].v = ScalarMult(ball[i].P, 1.0/(ball[i].mass));
 	}
-	float treshR = pow(kBallSize,2);
+
+
+	float imp;
+	vec3 r;
 	// Detect collisions, calculate speed differences, apply forces
-	for (i = 0; i < kNumBalls; i++)
-	for (j = i+1; j < kNumBalls; j++)
-	{
-		vec3 pos1 = ball[i].X;
-		vec3 pos2 = ball[j].X;
-		vec3 r    = VectorSub(pos2,pos1);
-		float rMag = pow(r.x,2) + pow(r.z,2);
-		if (rMag <= treshR+0.02) {
-			vec3 poi = VectorAdd(pos1,ScalarMult(r,1/2));
-			vec3 r1 = VectorSub(poi, pos1);
-			vec3 r2 = VectorSub(poi , pos2);
-			vec3 vp1 = VectorAdd(ball[i].v, CrossProduct(ball[i].omega,r1));
-			vec3 vp2 =	VectorAdd(ball[j].v, CrossProduct(ball[j].omega,r2));
-
-			vec3 vrel = VectorSub(vp1,vp2);
-			vec3 n  = Normalize(ScalarMult(r,-1));
-			float vrelm = DotProduct(vrel,n);
-
-			float jt = -(elasticity +1)*vrelm;
-			vec3 p1 = CrossProduct(CrossProduct(r1,n),r1);
-		 	vec3 p2 = CrossProduct(CrossProduct(r2,n),r2);
-			vec3 p3 = VectorAdd(p1,p2);
-			float jn = 1/ball[i].mass + 1/ball[j].mass + DotProduct(n,p3);
-			float jee = jt/jn;
-
-			vec3 vplus1 = VectorAdd(ball[i].v ,ScalarMult(n,jee/ball[i].mass));
-			ball[i].P = ScalarMult(vplus1,ball[i].mass);
-
-			vec3 vplus2 = VectorAdd(ball[j].v ,ScalarMult(n,-jee/ball[j].mass));
-			ball[j].P = ScalarMult(vplus2,ball[j].mass);
-
-			//ball[i].v = SetVector(5,5,5);
-
-
+	for (i = 0; i < kNumBalls; i++){
+		for (j = i+1; j < kNumBalls; j++){
+			r = VectorSub(ball[i].X, ball[j].X);
+			if((Norm(r) < 2*kBallSize)){// && (DotProduct(ball[i].v,r) < DotProduct(ball[j].v, r)) ){
+				imp = -(ELASTICITY + 1)*DotProduct(Normalize(r),VectorSub(ball[i].v, ball[j].v))/(1.0/ball[i].mass + 1.0/ball[j].mass);
+				ball[i].P = VectorAdd(ScalarMult(Normalize(r), imp), ball[i].P); //impulse in direction of n, added to P.
+				ball[j].P = VectorAdd(ScalarMult(Normalize(r), -imp), ball[j].P);
+			}
 		}
 	}
+
 
 	// Control rotation here to reflect
 	// friction against floor, simplified as well as more correct
@@ -342,13 +322,13 @@ void init()
 		ball[i].P = SetVector(((float)(i % 13))/ 50.0, 0.0, ((float)(i % 15))/50.0);
 		ball[i].R = IdentityMatrix();
 	}
-	ball[3].mass = 15.0;
+	ball[3].mass = 1.0;
 	ball[0].X = SetVector(0, 0, 0);
 	ball[1].X = SetVector(0, 0, 0.5);
 	ball[2].X = SetVector(0.0, 0, 1.0);
 	ball[3].X = SetVector(0, 0, 1.5);
-	ball[0].P = SetVector(1, 0, 0);
-	ball[1].P = SetVector(1, 0, 1);
+	ball[0].P = SetVector(0, 0, 0);
+	ball[1].P = SetVector(0, 0, 0);
 	ball[2].P = SetVector(0, 0, 0);
 	ball[3].P = SetVector(0, 0, 1.00);
 
