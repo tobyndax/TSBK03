@@ -30,7 +30,7 @@
 // initial width and heights
 #define W 600
 #define H 600
-#define ELASTICITY 0
+#define ELASTICITY 1
 
 #define NEAR 1.0
 #define FAR 100.0
@@ -81,6 +81,7 @@ typedef struct
 	//  mat4 J, Ji; We could have these but we can live without them for spheres.
 	vec3 omega; // Angular momentum
 	vec3 v; // Change in velocity
+	mat3 I;
 
 } Ball;
 
@@ -204,9 +205,13 @@ void updateWorld()
 	// friction against floor, simplified as well as more correct
 	for (i = 0; i < kNumBalls; i++)
 	{
+		vec3 r = SetVector(0.0,-kBallSize/2,0.0);
+		ball[i].L = CrossProduct(r,ball[i].P);
+		ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
+
+		vec3 vContact = VectorAdd(ScalarMult(ball[i].omega,kBallSize/2),ball[i].v);
 
 	}
-
 	// Update state, follows the book closely
 	for (i = 0; i < kNumBalls; i++)
 	{
@@ -215,8 +220,7 @@ void updateWorld()
 		vec3 up = SetVector(0,1,0);
 		// Note: omega is not set. How do you calculate it?
 		vec3 rot_axis = CrossProduct(up, ball[i].P);
-		ball[i].omega = ScalarMult(rot_axis, 1.0/(ball[i].mass*kBallSize));
-
+		//ball[i].omega = ScalarMult(rot_axis, 1.0/(ball[i].mass*kBallSize));
 
 
 		//		v := P * 1/mass
@@ -321,6 +325,8 @@ void init()
 		ball[i].X = SetVector(0.0, 0.0, 0.0);
 		ball[i].P = SetVector(((float)(i % 13))/ 50.0, 0.0, ((float)(i % 15))/50.0);
 		ball[i].R = IdentityMatrix();
+		float s = pow(kBallSize,2)*ball[i].mass/3;
+		ball[i].I = mat4tomat3(S(s,s,s));
 	}
 	ball[3].mass = 1.0;
 	ball[0].X = SetVector(0, 0, 0);
