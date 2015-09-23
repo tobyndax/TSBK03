@@ -205,12 +205,15 @@ void updateWorld()
 	// friction against floor, simplified as well as more correct
 	for (i = 0; i < kNumBalls; i++)
 	{
-		vec3 r = SetVector(0.0,-kBallSize/2,0.0);
+		vec3 r = SetVector(0.0,kBallSize/2,0.0);
 		ball[i].L = CrossProduct(r,ball[i].P);
 		ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
 
 		vec3 vContact = VectorAdd(ScalarMult(ball[i].omega,kBallSize/2),ball[i].v);
-
+		if(Norm(ball[i].v)>0){
+			vec3 n = Normalize(ball[i].v);
+			ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
+		}
 	}
 	// Update state, follows the book closely
 	for (i = 0; i < kNumBalls; i++)
