@@ -10,13 +10,13 @@ ifeq ($(PLATFORM),mac)
 
 #Mac frameworks
 LDFLAGS = -framework GLUT -framework OpenGL -framework Cocoa
-MICRO = Mac/MicroGlut.m
+MICRO = common/mac/MicroGlut.m
 
 endif
 
 ifeq ($(PLATFORM),linux)
 LDFLAGS = -lGL -lm -DGL_GLEXT_PROTOTYPES -lXt -lX11
-MICRO = ../common/MicroGlut.c
+MICRO = common/Linux/MicroGlut.c
 endif
 
 
@@ -24,7 +24,7 @@ endif
 GCCFLAGS = -Wall -std=c99 -I../common
 #Binaries that are needed for all sub-compilations
 commondir = common/
-BINARIES = $(commondir)LoadTGA.c SpriteLight.c $(commondir)VectorUtils3.c $(commondir)GL_utilities.c $(commondir)Linux/MicroGlut.c
+BINARIES = $(commondir)LoadTGA.c SpriteLight.c $(commondir)VectorUtils3.c $(commondir)GL_utilities.c $(MICRO)
 
 
 all: lab4
