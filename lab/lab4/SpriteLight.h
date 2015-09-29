@@ -24,9 +24,12 @@ typedef struct SpriteRec
 	FPoint position;
 	TextureData *face;
 	FPoint speed;
+	FPoint speedDiff;
+	FPoint averagePosition;
+	FPoint avoidanceVector;
 	GLfloat rotation;
 	struct SpriteRec *next;
-	
+
 	// Add custom sprite data here as needed
 } SpriteRec, *SpritePtr;
 
@@ -34,6 +37,8 @@ typedef struct SpriteRec
 extern SpritePtr gSpriteRoot;
 extern GLuint backgroundTexID;
 extern long gWidth, gHeight;
+extern int numBoids;
+
 
 // Functions
 TextureData *GetFace(char *fileName);

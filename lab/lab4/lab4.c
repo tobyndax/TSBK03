@@ -12,37 +12,97 @@
 	#include "MicroGlut.h"
 #endif
 
+#include <math.h>
 #include <stdlib.h>
 #include "LoadTGA.h"
 #include "SpriteLight.h"
 #include "GL_utilities.h"
 
-// LŠgg till egna globaler hŠr efter behov.
+int numBoids = 0;
+float kAlignmentWeight = 1;
+float kCohesionWeight = 0.005f;
+float kAvoidanceWeight = 1;
+float kMaxDistance = 150;
+
+
+bool myDistance(SpritePtr sp1, SpritePtr sp2, float kMaxDistance){
+	float d1 = pow(sp2->position.h - sp1->position.h,2);
+	float d2 = pow(sp2->position.v - sp1->position.v,2);
+	//printf("%f\n",sqrt(d1+d2) );
+	return (sqrt(d1+d2)<kMaxDistance);
+}
 
 
 void SpriteBehavior() // Din kod!
 {
-// LŠgg till din labbkod hŠr. Det gŒr bra att Šndra var som helst i
-// koden i švrigt, men mycket kan samlas hŠr. Du kan utgŒ frŒn den
-// globala listroten, gSpriteRoot, fšr att kontrollera alla sprites
-// hastigheter och positioner, eller arbeta frŒn egna globaler.
+// Lï¿½gg till din labbkod hï¿½r. Det gï¿½r bra att ï¿½ndra var som helst i
+// koden i ï¿½vrigt, men mycket kan samlas hï¿½r. Du kan utgï¿½ frï¿½n den
+// globala listroten, gSpriteRoot, fï¿½r att kontrollera alla sprites
+// hastigheter och positioner, eller arbeta frï¿½n egna globaler.
+
+SpritePtr sp1 = gSpriteRoot;
+SpritePtr sp2;
+
+for (int i = 0; i < numBoids; ++i) {
+	int count = 0;
+	sp1->averagePosition.h = 0;
+	sp1->averagePosition.v = 0;
+
+	sp2 = gSpriteRoot;
+	for (int j = 0; j < numBoids; ++j) {
+		if (i == j){
+
+		}else if(myDistance(sp1,sp2,kMaxDistance)){
+				sp1->averagePosition.h += sp2->position.h;
+				sp1->averagePosition.v += sp2->position.v;
+				count += 1;
+
+		}
+		sp2=sp2->next;
+	}
+
+	//update boid i's states
+	if (count > 0){
+		sp1->averagePosition.h /= count;
+		sp1->averagePosition.v /= count;
+	}else{
+		sp1->averagePosition.h = sp1->position.h;
+		sp1->averagePosition.v = sp1->position.v;
+	}
+
+	//Go to next main boid
+	sp1 = sp1->next;
+}
+SpritePtr sp = gSpriteRoot;
+for (int i = 0; i < numBoids; ++i) {
+	printf("%f \n", sp->averagePosition.h);
+	//sp->speed.h += sp->speedDiff.h*kAlignmentWeight + (sp->averagePosition.h )*kCohesionWeight + sp->avoidanceVector.h *kAvoidanceWeight;
+	//sp->speed.v += sp->speedDiff.v*kAlignmentWeight + (sp->averagePosition.v ) *kCohesionWeight + sp->avoidanceVector.v *kAvoidanceWeight;
+
+	sp->speed.h += sp->speedDiff.h*kAlignmentWeight + (sp->averagePosition.h -sp->position.h)*kCohesionWeight + sp->avoidanceVector.h *kAvoidanceWeight;
+	sp->speed.v += sp->speedDiff.v*kAlignmentWeight + (sp->averagePosition.v -sp->position.v) *kCohesionWeight + sp->avoidanceVector.v *kAvoidanceWeight;
+	sp = sp->next;
+}
+
+
+
 }
 
 // Drawing routine
 void Display()
 {
 	SpritePtr sp;
-	
+
 	glClearColor(0, 0, 0.2, 1);
 	glClear(GL_COLOR_BUFFER_BIT+GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
+
 	DrawBackground();
-	
+
 	SpriteBehavior(); // Din kod!
-	
+
 // Loop though all sprites. (Several loops in real engine.)
 	sp = gSpriteRoot;
 	do
@@ -51,7 +111,7 @@ void Display()
 		DrawSprite(sp);
 		sp = sp->next;
 	} while (sp != NULL);
-	
+
 	glutSwapBuffers();
 }
 
@@ -93,14 +153,14 @@ void Key(unsigned char key,
 void Init()
 {
 	TextureData *sheepFace, *blackFace, *dogFace, *foodFace;
-	
+
 	LoadTGATextureSimple("bilder/leaves.tga", &backgroundTexID); // Bakgrund
-	
-	sheepFace = GetFace("bilder/sheep.tga"); // Ett fŒr
-	blackFace = GetFace("bilder/blackie.tga"); // Ett svart fŒr
+
+	sheepFace = GetFace("bilder/sheep.tga"); // Ett fï¿½r
+	blackFace = GetFace("bilder/blackie.tga"); // Ett svart fï¿½r
 	dogFace = GetFace("bilder/dog.tga"); // En hund
 	foodFace = GetFace("bilder/mat.tga"); // Mat
-	
+
 	NewSprite(sheepFace, 100, 200, 1, 1);
 	NewSprite(sheepFace, 200, 100, 1.5, -1);
 	NewSprite(sheepFace, 250, 200, -1, 1.5);
@@ -113,15 +173,15 @@ int main(int argc, char **argv)
 	glutInitWindowSize(800, 600);
 	glutInitContextVersion(3, 2);
 	glutCreateWindow("SpriteLight demo / Flocking");
-	
+
 	glutDisplayFunc(Display);
 	glutTimerFunc(20, Timer, 0); // Should match the screen synch
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Key);
-	
+
 	InitSpriteLight();
 	Init();
-	
+
 	glutMainLoop();
 	return 0;
 }
