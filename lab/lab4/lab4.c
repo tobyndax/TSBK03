@@ -20,10 +20,12 @@
 
 int numBoids = 0;
 float kAlignmentWeight = 1.0f;
-float kCohesionWeight = 1.1f;
+float kCohesionWeight = 0.9f;
 float kAvoidanceWeight = 1.0f;
-float kMaxDistance = 200;
-
+float kBlackAvoidance = 10.0f;
+float kMaxDistance = 300;
+float kBlackDistance = 200;
+TextureData *sheepFace, *blackFace, *dogFace, *foodFace;
 
 float myNorm(float a,float b ){
 	return sqrt(pow(a,2)+pow(b,2));
@@ -55,6 +57,9 @@ void SpriteBehavior() // Din kod!
 		sp1->avoidanceVector.h = 0;
 		sp1->avoidanceVector.v = 0;
 
+		sp1->blackAvoidance.h = 0;
+		sp1->blackAvoidance.v = 0;
+
 		sp1->speedDiff.h = 0;
 		sp1->speedDiff.v = 0;
 
@@ -62,7 +67,11 @@ void SpriteBehavior() // Din kod!
 		for (int j = 0; j < numBoids; ++j) {
 			if (i == j){
 
-			}else if(myDistance(sp1,sp2) < kMaxDistance){// && myDistance(sp1,sp2) > 40  ){
+			}else if(myDistance(sp1,sp2) < kBlackDistance && sp2->face==blackFace && sp1->face==sheepFace){
+				sp1->blackAvoidance.h += sp2->position.h - sp1->position.h;
+				sp1->blackAvoidance.v += sp2->position.v - sp1->position.v;
+			}
+			else if(myDistance(sp1,sp2) < kMaxDistance && (sp1->face==sheepFace)&&(sp2->face==sheepFace)){// && myDistance(sp1,sp2) > 40  ){
 
 				sp1->averagePosition.h += sp2->position.h;
 				sp1->averagePosition.v += sp2->position.v;
@@ -101,7 +110,14 @@ void SpriteBehavior() // Din kod!
 			sp1->avoidanceVector.h /=  coeff;
 			sp1->avoidanceVector.v /=  coeff;
 
+			sp1->blackAvoidance.h /= -1;
+			sp1->blackAvoidance.v /= -1;
 
+			coeff = myNorm(sp1->blackAvoidance.h,sp1->blackAvoidance.v);
+			if(coeff>0){
+				sp1->blackAvoidance.h /=  coeff;
+				sp1->blackAvoidance.v /=  coeff;
+			}
 		}
 		//Go to next main boid
 		sp1 = sp1->next;
@@ -111,12 +127,35 @@ void SpriteBehavior() // Din kod!
 	SpritePtr sp = gSpriteRoot;
 	for (int i = 0; i < numBoids; ++i) {
 		float speed = myNorm(sp->speed.h,sp->speed.v);
-		float coeff = myNorm(sp->speedDiff.h*kAlignmentWeight + (sp->averagePosition.h )*kCohesionWeight + sp->avoidanceVector.h *kAvoidanceWeight, sp->speedDiff.v*kAlignmentWeight + (sp->averagePosition.v) *kCohesionWeight + sp->avoidanceVector.v *kAvoidanceWeight);
+		float coeff = myNorm(sp->speedDiff.h*kAlignmentWeight +
+			(sp->averagePosition.h )*kCohesionWeight +
+			sp->avoidanceVector.h *kAvoidanceWeight +
+			sp->blackAvoidance.h*kBlackAvoidance,
+			sp->speedDiff.v*kAlignmentWeight +
+			(sp->averagePosition.v) *kCohesionWeight +
+			sp->avoidanceVector.v *kAvoidanceWeight+
+			sp->blackAvoidance.v*kBlackAvoidance);
 		if(coeff > 0){
+			sp->speed.h += (sp->speedDiff.h*kAlignmentWeight +
+				(sp->averagePosition.h )*kCohesionWeight +
+				sp->avoidanceVector.h *kAvoidanceWeight+
+				sp->blackAvoidance.h*kBlackAvoidance)/coeff;
+			sp->speed.v += (sp->speedDiff.v*kAlignmentWeight +
+				(sp->averagePosition.v) *kCohesionWeight +
+				sp->avoidanceVector.v *kAvoidanceWeight+
+				sp->blackAvoidance.h*kBlackAvoidance)/coeff;
 
-			sp->speed.h += (sp->speedDiff.h*kAlignmentWeight + (sp->averagePosition.h )*kCohesionWeight + sp->avoidanceVector.h *kAvoidanceWeight)/coeff;
-			sp->speed.v += (sp->speedDiff.v*kAlignmentWeight + (sp->averagePosition.v) *kCohesionWeight + sp->avoidanceVector.v *kAvoidanceWeight)/coeff;
-
+			float speed2 = myNorm(sp->speed.h,sp->speed.v);
+			sp->speed.h /= speed2;
+			sp->speed.h *= speed;
+			sp->speed.v /= speed2;
+			sp->speed.v *= speed;
+		}
+		if(sp->face==blackFace){
+			float h = (float)rand()/(float)(RAND_MAX/0.25)-0.25/2;
+			float v = (float)rand()/(float)(RAND_MAX/0.25)-0.25/2;
+			sp->speed.h = sp->speed.h+h;
+			sp->speed.v = sp->speed.v+v;
 			float speed2 = myNorm(sp->speed.h,sp->speed.v);
 			sp->speed.h /= speed2;
 			sp->speed.h *= speed;
@@ -188,7 +227,7 @@ void Key(unsigned char key,
 			exit(0);
 		}
 	}
-TextureData *sheepFace, *blackFace, *dogFace, *foodFace;
+
 	void Init()
 	{
 		LoadTGATextureSimple("bilder/leaves.tga", &backgroundTexID); // Bakgrund
@@ -202,7 +241,7 @@ TextureData *sheepFace, *blackFace, *dogFace, *foodFace;
 		NewSprite(sheepFace, 200, 100, 1.5, -1);
 		NewSprite(sheepFace, 750, 200, -1, 1.5);
 		NewSprite(sheepFace, 750, 250, 0, 1.5);
-		NewSprite(blackFace, 750, 250, 0, 1.5);
+		NewSprite(blackFace, 550, 250, 0, 1.5);
 	}
 
 	int main(int argc, char **argv)

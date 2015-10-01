@@ -27,6 +27,7 @@ typedef struct SpriteRec
 	FPoint speedDiff;
 	FPoint averagePosition;
 	FPoint avoidanceVector;
+	FPoint blackAvoidance;
 	GLfloat rotation;
 	struct SpriteRec *next;
 
