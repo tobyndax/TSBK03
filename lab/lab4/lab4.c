@@ -20,10 +20,10 @@
 
 int numBoids = 0;
 float kAlignmentWeight = 1.0f;
-float kCohesionWeight = 0.9f;
+float kCohesionWeight = 1.0f;
 float kAvoidanceWeight = 1.0f;
-float kBlackAvoidance = 10.0f;
-float kMaxDistance = 300;
+float kBlackAvoidance = 0.1f;
+float kMaxDistance = 200;
 float kBlackDistance = 200;
 TextureData *sheepFace, *blackFace, *dogFace, *foodFace;
 
@@ -133,8 +133,7 @@ void SpriteBehavior() // Din kod!
 			sp->blackAvoidance.h*kBlackAvoidance,
 			sp->speedDiff.v*kAlignmentWeight +
 			(sp->averagePosition.v) *kCohesionWeight +
-			sp->avoidanceVector.v *kAvoidanceWeight+
-			sp->blackAvoidance.v*kBlackAvoidance);
+			sp->avoidanceVector.v *kAvoidanceWeight);
 		if(coeff > 0){
 			sp->speed.h += (sp->speedDiff.h*kAlignmentWeight +
 				(sp->averagePosition.h )*kCohesionWeight +
@@ -142,14 +141,15 @@ void SpriteBehavior() // Din kod!
 				sp->blackAvoidance.h*kBlackAvoidance)/coeff;
 			sp->speed.v += (sp->speedDiff.v*kAlignmentWeight +
 				(sp->averagePosition.v) *kCohesionWeight +
-				sp->avoidanceVector.v *kAvoidanceWeight+
-				sp->blackAvoidance.h*kBlackAvoidance)/coeff;
+				sp->avoidanceVector.v *kAvoidanceWeight)/coeff;
 
 			float speed2 = myNorm(sp->speed.h,sp->speed.v);
 			sp->speed.h /= speed2;
-			sp->speed.h *= speed;
+			sp->speed.h *= speed*0.99;
+			sp->speed.h = fminf(3,sp->speed.h+sp->blackAvoidance.h*kBlackAvoidance);
 			sp->speed.v /= speed2;
-			sp->speed.v *= speed;
+			sp->speed.v *= speed*0.99;
+			sp->speed.v = fminf(3,sp->speed.v+sp->blackAvoidance.v*kBlackAvoidance);
 		}
 		if(sp->face==blackFace){
 			float h = (float)rand()/(float)(RAND_MAX/0.25)-0.25/2;
