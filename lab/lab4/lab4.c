@@ -19,9 +19,9 @@
 #include "GL_utilities.h"
 
 int numBoids = 0;
-float kAlignmentWeight = 1;
-float kCohesionWeight = 0.5f;
-float kAvoidanceWeight = 1;
+float kAlignmentWeight = 1.0f;
+float kCohesionWeight = 1.1f;
+float kAvoidanceWeight = 1.0f;
 float kMaxDistance = 200;
 
 
@@ -63,8 +63,16 @@ void SpriteBehavior() // Din kod!
 			if (i == j){
 
 			}else if(myDistance(sp1,sp2) < kMaxDistance){// && myDistance(sp1,sp2) > 40  ){
+
 				sp1->averagePosition.h += sp2->position.h;
 				sp1->averagePosition.v += sp2->position.v;
+
+				sp1->speedDiff.h += sp2->speed.h;// - sp1->speed.h;
+				sp1->speedDiff.v += sp2->speed.v;// - sp1->speed.v;
+
+				sp1->avoidanceVector.h += sp2->position.h - sp1->position.h;
+				sp1->avoidanceVector.v += sp2->position.v - sp1->position.v;
+
 				count += 1;
 			}
 			sp2=sp2->next;
@@ -72,13 +80,27 @@ void SpriteBehavior() // Din kod!
 
 		//update boid i's states
 		if (count > 0){
+			sp1->speedDiff.h /= count;
+			sp1->speedDiff.v /= count;
+			float coeff = myNorm(sp1->averagePosition.h,sp1->averagePosition.v);
+
+
 			sp1->averagePosition.h /= count;
 			sp1->averagePosition.v /= count;
 			sp1->averagePosition.h -= sp1->position.h;
 			sp1->averagePosition.v -= sp1->position.v;
-			float coeff = sqrt(pow(sp1->averagePosition.h,2)+pow(sp1->averagePosition.v,2));
+
+			coeff = myNorm(sp1->averagePosition.h,sp1->averagePosition.v);
 			sp1->averagePosition.h /= coeff;
 			sp1->averagePosition.v /= coeff;
+
+			sp1->avoidanceVector.h /= -count;
+			sp1->avoidanceVector.v /= -count;
+
+			coeff = myNorm(sp1->avoidanceVector.h,sp1->avoidanceVector.v);
+			sp1->avoidanceVector.h /=  coeff;
+			sp1->avoidanceVector.v /=  coeff;
+
 
 		}
 		//Go to next main boid
@@ -100,10 +122,6 @@ void SpriteBehavior() // Din kod!
 			sp->speed.h *= speed;
 			sp->speed.v /= speed2;
 			sp->speed.v *= speed;
-
-
-
-
 		}
 		sp = sp->next;
 	}
@@ -170,11 +188,9 @@ void Key(unsigned char key,
 			exit(0);
 		}
 	}
-
+TextureData *sheepFace, *blackFace, *dogFace, *foodFace;
 	void Init()
 	{
-		TextureData *sheepFace, *blackFace, *dogFace, *foodFace;
-
 		LoadTGATextureSimple("bilder/leaves.tga", &backgroundTexID); // Bakgrund
 
 		sheepFace = GetFace("bilder/sheep.tga"); // Ett f�r
@@ -184,7 +200,9 @@ void Key(unsigned char key,
 
 		NewSprite(sheepFace, 100, 200, 1, 1);
 		NewSprite(sheepFace, 200, 100, 1.5, -1);
-		//NewSprite(sheepFace, 250, 200, -1, 1.5);
+		NewSprite(sheepFace, 750, 200, -1, 1.5);
+		NewSprite(sheepFace, 750, 250, 0, 1.5);
+		NewSprite(blackFace, 750, 250, 0, 1.5);
 	}
 
 	int main(int argc, char **argv)

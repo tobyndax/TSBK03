@@ -64,7 +64,7 @@ struct SpriteRec *NewSprite(TextureData *f, GLfloat h, GLfloat v, GLfloat hs, GL
 	sp->averagePosition.v = 0;
 
 	sp->avoidanceVector.h = 0;
-	sp->avoidanceVector.h = 0;
+	sp->avoidanceVector.v = 0;
 
 
 	/* Our own members end
