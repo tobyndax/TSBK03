@@ -23,10 +23,10 @@ GCCFLAGS = -Wall -std=c99 -Icommon
 #Binaries that are needed for all sub-compilations
 BINARIES = common/GL_utilities.c common/VectorUtils3.c common/LoadTGA.c common/loadobj.c common/zpr.c $(MICRO)
 
-MAIN = lab3.c
+MAIN = project.c
 
 
-all: lab3
+all: clean lab3
 #target: dependencies
 #’tab’ 	compilation commands
 
