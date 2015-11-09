@@ -1,9 +1,9 @@
 //Project for TSBK07
 
 #ifdef __APPLE__
-#include <OpenGL/gl3.h>
-#include "mac/MicroGlut.h"
-#include <ApplicationServices/ApplicationServices.h>
+  #include <OpenGL/gl3.h>
+  #include "mac/MicroGlut.h"
+  #include <ApplicationServices/ApplicationServices.h>
 #endif
 #include "GL_utilities.h"
 #include "VectorUtils3.h"
@@ -12,7 +12,7 @@
 #include "globals.h"
 #include <math.h>
 
-bool shatter = false; 
+bool shatter = false;
 
 Model* GenerateTerrain(TextureData *tex){
     int vertexCount = tex->width * tex->height;
@@ -303,44 +303,6 @@ void initSky(){
     glUseProgram(objectProgram);
 }
 
-void initLeaves(){
-
-    projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 500.0);
-
-    glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
-    glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
-    glUniform1fv(glGetUniformLocation(objectProgram, "specularExponent"), 4, specularExponent);
-    glUniform1iv(glGetUniformLocation(objectProgram, "isDirectional"), 4, isDirectional);
-
-    // Load and compile shader
-    leafProgram = loadShaders("leaf.vert", "leaf.frag");
-    glUseProgram(leafProgram);
-    printError("init leaf shader");
-
-    glUniformMatrix4fv(glGetUniformLocation(leafProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-    LoadTGATextureSimple("half_branch.tga", &leafTex);
-
-    mat4 viewMatrix=lookAtv(camPosition,viewPoint, upVector);
-    glUniformMatrix4fv(glGetUniformLocation(leafProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-
-    leaves = LoadModelPlus("leaf2.obj",leafProgram,"inPosition","inNormal","inTexCoord");
-    printError("Model Loading leaves");
-
-    leaves2 = LoadModelPlus("leaf2-2.obj",leafProgram,"inPosition","inNormal","inTexCoord");
-    printError("Model Loading leaves");
-
-
-
-    //--------------------LightSources-----------------------
-
-    glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
-    glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
-    glUniform1fv(glGetUniformLocation(objectProgram, "specularExponent"), 4, specularExponent);
-    glUniform1iv(glGetUniformLocation(objectProgram, "isDirectional"), 4, isDirectional);
-
-
-}
-
 void initTerrain(){
     program = loadShaders("terrain4.vert", "terrain4.frag");
     glUseProgram(program);
@@ -370,9 +332,9 @@ void initTerrain(){
 
 void init(void){
     // GL inits
-#ifdef __APPLE__
-    glutHideCursor();
-#endif
+    #ifdef __APPLE__
+      glutHideCursor();
+    #endif
     glClearColor(0.2,0.2,0.5,0);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -682,10 +644,10 @@ void mouse(int x, int y)
     float centerX = 200;
     float centerY = 200;
 
-#ifdef __APPLE__
-    centerX = glutGet(GLUT_WINDOW_WIDTH)/2;
-    centerY = glutGet(GLUT_WINDOW_HEIGHT)/2;
-#endif
+    #ifdef __APPLE__
+      centerX = glutGet(GLUT_WINDOW_WIDTH)/2;
+      centerY = glutGet(GLUT_WINDOW_HEIGHT)/2;
+    #endif
 
     lastx = (float)x - lastx;
     lasty = (float)y - lasty;
@@ -709,14 +671,12 @@ void mouse(int x, int y)
     // if mouse wander off too much, warp it back.
     float dist = 100;
     if(x > centerX+dist || x < centerX-dist || y < centerY+dist || y > centerY-dist){
-#ifdef __APPLE__
+      #ifdef __APPLE__
         CGPoint warpPoint = CGPointMake(centerX,centerY);
         CGWarpMouseCursorPosition(warpPoint);
         CGAssociateMouseAndMouseCursorPosition(true);
-#endif
-#ifndef __APPLE__
         glutWarpPointer( centerX, centerY );
-#endif
+      #endif
     }
     printf("%d %d\n", deltax ,deltay);
     //printf("%d %d\n", deltax ,deltay);
@@ -729,9 +689,9 @@ int main(int argc, char **argv){
     glutInitWindowSize (600, 600);
     glutCreateWindow ("Project Orion");
     glutDisplayFunc(display);
-#ifdef __APPLE__
-    glutFullScreen();
-#endif
+    #ifdef __APPLE__
+      glutFullScreen();
+      #endif
     init ();
     initKeymapManager();
     glutTimerFunc(20, &timer, 0);
