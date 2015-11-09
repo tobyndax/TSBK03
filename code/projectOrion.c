@@ -12,6 +12,8 @@
 #include "globals.h"
 #include <math.h>
 
+bool shatter = false; 
+
 Model* GenerateTerrain(TextureData *tex){
     int vertexCount = tex->width * tex->height;
     int triangleCount = (tex->width-1) * (tex->height-1) * 2;
@@ -543,6 +545,11 @@ mat4 keyInputs2(){
         mat4 latRot = ArbRotate(direction, 0.1f);
         upVector=MultVec3(latRot,upVector);
     }
+
+    if(keyIsDown('h')){
+        shatter = true;
+    }
+
     if(camPosition.y < getHeight(camPosition.x,camPosition.z,&ttex)+1.0){
         camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
         upVector = SetVector(0.0,1.0,0.0);
