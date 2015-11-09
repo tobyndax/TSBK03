@@ -79,7 +79,7 @@ void init(void){
     printError("GL inits");
 
     projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 500.0);
-    
+
     // Load and compile shader
     objectProgram = loadShaders("object.vert", "object.frag");
     glUseProgram(objectProgram);
@@ -106,8 +106,16 @@ void init(void){
 
     initTerrain();
     initSky();
-    printError("kaos --------------------");
+    printError("Init sky + terrain");
     //Move initially just to set everything up properly!
+
+
+    squareModel = LoadDataToModel(
+  			square, NULL, squareTexCoord, NULL,
+  			squareIndices, 4, 6);
+
+
+
 
     vec3 direction = VectorSub(viewPoint,camPosition);
     direction = ScalarMult(Normalize(direction),3);
@@ -364,6 +372,8 @@ void display(void){
     glUseProgram(leafProgram);
     glUniformMatrix4fv(glGetUniformLocation(leafProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
     printError("display ERROR");
+
+    
 
     glutSwapBuffers();
 }
