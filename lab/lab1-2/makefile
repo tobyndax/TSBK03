@@ -10,7 +10,7 @@ ifeq ($(PLATFORM),mac)
 
 #Mac frameworks
 LDFLAGS = -framework GLUT -framework OpenGL -framework Cocoa
-MICRO = Mac/MicroGlut.m
+MICRO = ../common/mac/MicroGlut.m
 
 endif
 
@@ -23,7 +23,7 @@ endif
 #Compiler flags, enable warnings and c99 standard
 GCCFLAGS = -Wall -std=c99 -I../common
 #Binaries that are needed for all sub-compilations
-BINARIES = ../common/GL_utilities.c ../common/VectorUtils3.c ../common/LoadTGA.c ../common/loadobj.c ../common/zpr.c ../common/MicroGlut.c
+BINARIES = ../common/GL_utilities.c ../common/VectorUtils3.c ../common/LoadTGA.c ../common/loadobj.c ../common/zpr.c $(MICRO)
 
 
 all: lab0

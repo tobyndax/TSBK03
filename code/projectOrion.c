@@ -16,6 +16,21 @@
 vec3 billNormal;
 mat4 billRot;
 
+
+GLfloat square[] = {
+							-1,-1,0,
+							-1,1, 0,
+							1,1, 0,
+							1,-1, 0};
+GLfloat squareTexCoord[] = {
+							 0, 0,
+							 0, 1,
+							 1, 1,
+							 1, 0};
+GLuint squareIndices[] = {0, 1, 2, 0, 2, 3};
+
+
+
 Model* GenerateTerrain(TextureData *tex){
     int vertexCount = tex->width * tex->height;
     int triangleCount = (tex->width-1) * (tex->height-1) * 2;
@@ -380,32 +395,6 @@ void initTerrain(){
     glUseProgram(objectProgram);
 }
 
-void initCross(void){
-
-
-    LoadTGATextureSimple("cross.tga", &crossTex);
-
-    GLfloat orthProj[] =
-    {1,0,0,0,
-        0,1,0,0,
-        0,0,0,0,
-        0,0,0,50};
-
-    crossProgram = loadShaders("cross.vert", "cross.frag");
-    glUseProgram(crossProgram);
-
-    cross = LoadModelPlus("cross.obj",crossProgram,"inPosition","inNormal","inTexCoord");
-
-    glUniformMatrix4fv(glGetUniformLocation(crossProgram, "projMatrix"), 1, GL_TRUE,orthProj);
-
-
-    mat4 total = IdentityMatrix();
-    glUniformMatrix4fv(glGetUniformLocation(crossProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-    printError("Crosshair init");
-
-
-}
-
 void initGodzilla(mat4 viewMatrix){
 	// Load and compile shader
     godzillaProgram = loadShaders("godzilla.vert", "godzilla.frag");
@@ -722,7 +711,6 @@ void displayObjects(mat4 viewMatrix){
     glBindTexture(GL_TEXTURE_2D, treeTex);
     glUniform1i(glGetUniformLocation(objectProgram, "tex"), 0); // Texture unit 0
 
-
     /*
     //----------------LeafTexture-------------------
     glActiveTexture(GL_TEXTURE0);
@@ -730,274 +718,6 @@ void displayObjects(mat4 viewMatrix){
     glUniform1i(glGetUniformLocation(leafProgram, "texUnit"), 0); // Texture unit 0
     */
     printError("Program objects ERROR");
-}
-
-void displayLeaves(){
-
-    mat4 total, modelView, trans;
-
-    //-----------------light------------------------
-    GLfloat camPos[] = {camPosition.x, camPosition.y, camPosition.z};
-    glUniform3fv(glGetUniformLocation(leafProgram, "camPosition"), 1, camPos);
-
-
-    //----------------TreeTexture-------------------
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, leafTex);
-    glUniform1i(glGetUniformLocation(leafProgram, "texUnit"),0); // Texture unit 0
-
-    //----------------Tree5-------------------------
-
-    modelView = Rx(-M_PI/2);
-    trans = T(25,getHeight(25.0f,25.0f,&ttex),25);
-    total = Mult(trans,modelView);
-
-    glUniformMatrix4fv(glGetUniformLocation(leafProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-    DrawModel(leaves2, leafProgram, "inPosition", "inNormal", "inTexCoord");
-    DrawModel(leaves2, leafProgram, "inPosition", "inNormal", "inTexCoord");
-
-
-
-    printError("Leaf objects ERROR");
-
-}
-
-void crosshair(mat4 viewMatrix){
-
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-    glUseProgram(crossProgram);
-
-    //----------------TreeTexture-------------------
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, crossTex);
-    glUniform1i(glGetUniformLocation(crossProgram, "texUnit"), 0); // Texture unit 0
-
-    mat4 trans = T(1.0f, -0.4f, 0.0f);
-    viewMatrix.m[3] = 0;
-    viewMatrix.m[7] = 0;
-    viewMatrix.m[11] = 0;
-    mat4 total = Mult(viewMatrix,trans);
-
-    total = Ry(0);
-    printError("Crosshair display 1 ");
-    glUniformMatrix4fv(glGetUniformLocation(crossProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-    printError("Crosshair display 2 ");
-
-    DrawModel(cross, crossProgram, "inPosition", "inNormal", "inTexCoord");
-    printError("Crosshair display 3 ");
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-
-}
-
-void displayBillboard(mat4 viewMatrix){
-
-    vec3 treePos = SetVector(100.0f,getHeight(100.0f,100.0f,&ttex),100.0f);
-    vec3 camPos2 = camPosition;
-
-    vec3 distance = VectorSub(treePos,camPos2);
-    GLfloat d = sqrt(pow(distance.x,2)+pow(distance.z,2));
-
-    if(d>30){
-
-        vec3 zVector = SetVector(0,0,1);
-        GLfloat zAlpha = acos(DotProduct(Normalize(zVector),Normalize(distance)));
-        vec3 crossCheck = CrossProduct(zVector,distance);
-        if(crossCheck.y<0){
-            billRot = Ry(zAlpha);
-        }else{
-            billRot = Ry(-zAlpha);
-        }
-
-        vec3 distance = VectorSub(SetVector(treePos.x,0,treePos.z),SetVector(camPos2.x,0,camPos2.z));
-        GLfloat alpha = acos(DotProduct(Normalize(billNormal),Normalize(distance)));
-
-        if(alpha>(M_PI/24)){
-            billNormal = MultVec3(billRot,zVector);
-            printf("%f\n",alpha);
-
-            if(firstBillboard && hasMoved){
-                useFBO(fbo1, 0L, 0L);
-
-                // Clear framebuffer & zbuffer
-                glClearColor(0.0, 0.0, 0.0, -0.1);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-                // Activate shader program
-                glUseProgram(objectProgram);
-
-                //----------------TreeTexture-------------------
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, treeTex);
-                glUniform1i(glGetUniformLocation(objectProgram, "tex"), 0); // Texture unit 0
-
-                //----------------Tree1-------------------------
-
-                mat4 modelView = Rx(-M_PI/2);
-                mat4 trans = T(treePos.x,treePos.y,treePos.z);
-                mat4 total = Mult(trans,modelView);
-                glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-                glBindVertexArray(tree1->vao);    // Select VAO
-
-                //vec3 direction2 = VectorSub(treePos,camPos2);
-                mat4 billViewMatrix=lookAtv(camPos2,SetVector(treePos.x,treePos.y+6,treePos.z), SetVector(0,1,0));
-                glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, billViewMatrix.m);
-
-                //New Frustum!
-                GLfloat znear = 0.1;
-                GLfloat zfar = 500;
-                GLfloat aspect = 1;
-
-
-                //GLfloat d = sqrt(pow(distance.x,2) + pow(distance.z,2));
-
-                GLfloat theta = atan(6/d)*2*180/M_PI;
-                mat4 newProjection = perspective(theta,aspect,znear,zfar);
-
-                glUniformMatrix4fv(glGetUniformLocation(objectProgram, "projMatrix"), 1, GL_TRUE, newProjection.m);
-
-
-                // Enable Z-buffering
-                glEnable(GL_DEPTH_TEST);
-                // Enable backface culling
-                glEnable(GL_CULL_FACE);
-                glCullFace(GL_BACK);
-
-                DrawModel(tree1, objectProgram, "inPosition", "inNormal", "inTexCoord");
-                //firstBillboard = false;
-
-                glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-
-                glUniformMatrix4fv(glGetUniformLocation(objectProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-            }
-        }
-
-        useFBO(0L, fbo1, 0L);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, fbo1->texid);
-        glUniform1i(glGetUniformLocation(objectProgram, "tex"), 0); // Texture unit 0
-        //glClearColor(0.0, 0.0, 0.0, 0);
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Activate second shader program
-        glUseProgram(billboardProgram);
-
-        glDisable(GL_CULL_FACE);
-
-        //glDisable(GL_DEPTH_TEST);
-
-        glUniformMatrix4fv(glGetUniformLocation(billboardProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-
-        mat4 trans = T(treePos.x,treePos.y,treePos.z);
-        mat4 scale = S(12,12.5,0);
-        mat4 total = Mult(trans,Mult(billRot,scale));
-        glUniformMatrix4fv(glGetUniformLocation(billboardProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-
-
-        DrawModel(squareModel, billboardProgram, "in_Position", NULL, "in_TexCoord");
-    }else{
-        glUseProgram(objectProgram);
-        //----------------TreeTexture-------------------
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, treeTex);
-        glUniform1i(glGetUniformLocation(objectProgram, "tex"), 0); // Texture unit 0
-
-        //----------------Tree1-------------------------
-
-        mat4 modelView = Rx(-M_PI/2);
-        mat4 trans = T(treePos.x,treePos.y,treePos.z);
-        mat4 total = Mult(trans,modelView);
-        glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-        glBindVertexArray(tree1->vao);    // Select VAO
-
-        DrawModel(tree1, objectProgram, "inPosition", "inNormal", "inTexCoord");
-    }
-    glFlush();
-
-    printError("billboard ERROR");
-}
-
-void displaGodzilla(){
-
-	mat4 scale,trans,total,modelView;
-
-
-		//----------------GodzillaTexture-------------------
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, GodzillaTex);
-	glUniform1i(glGetUniformLocation(godzillaProgram, "tex"), 0); // Texture unit 0
-
-	glActiveTexture(GL_TEXTURE1);
-	if(glowGodzilla){
-		glBindTexture(GL_TEXTURE_2D, GlowGodzillaTex);
-	}else{
-		glBindTexture(GL_TEXTURE_2D, GodzillaTex);
-	}
-	glUniform1i(glGetUniformLocation(godzillaProgram, "glowTex"), 1); // Texture unit 1
-	//----------------Godzilla-------------------------
-
-	GLfloat Sc = 0.5;
-	if(!glowGodzilla){
-		modelView = Ry(-M_PI/4);
-		scale = S(Sc,Sc,Sc);
-		trans = T(xGodzilla,yGodzilla,zGodzilla);
-		total = Mult(trans,Mult(modelView,scale));
-		glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-	    glBindVertexArray(Godzilla->vao);    // Select VAO
-	    DrawModel(Godzilla, godzillaProgram, "inPosition", "inNormal", "inTexCoord");
-	}
-
-	else if(glowGodzilla){
-		Sc = 0.5; //0.8 är bra för GodzillaFight
-		modelView = Ry(-M_PI/4);
-		scale = S(Sc,Sc,Sc);
-		trans = T(xGodzilla,yGodzilla,zGodzilla);
-		total = Mult(trans,Mult(modelView,scale));
-    	glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-    	glBindVertexArray(GodzillaFight->vao);    // Select VAO
-    	DrawModel(GodzillaFight, godzillaProgram, "inPosition", "inNormal", "inTexCoord");
-
-    	glUseProgram(objectProgram);
-    	//----------------Hokmuto---------------------------
-    	glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, HokmutoTex);
-		glUniform1i(glGetUniformLocation(objectProgram, "tex"), 0); // Texture unit 0
-	    GLfloat xH = 200.0;
-	    GLfloat zH = 100.0;
-	    modelView = Ry(M_PI/2);
-		scale = S(0.2,0.2,0.2);
-		trans = T(xH,getHeight(xH,zH,&ttex),zH);
-		total = Mult(trans,Mult(modelView,scale));
-		glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-	    glBindVertexArray(Hokmuto->vao);    // Select VAO
-	    DrawModel(Hokmuto, objectProgram, "inPosition", "inNormal", "inTexCoord");
-
-	    //---------------------Femuto--------------------
-	    glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, FemutoTex);
-
-	    GLfloat xF = 100.0;
-	    GLfloat zF = 200.0;
-	    modelView = Ry(M_PI);
-		scale = S(0.2,0.2,0.2);
-		trans = T(xF,getHeight(xF,zF,&ttex),zF);
-		total = Mult(trans,Mult(modelView,scale));
-		glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-	    glBindVertexArray(Femuto->vao);    // Select VAO
-	    DrawModel(Femuto, objectProgram, "inPosition", "inNormal", "inTexCoord");
-	}
-	glUseProgram(godzillaProgram);
-
-	if(yGodzilla<0){
-    	yGodzilla = yGodzilla + 0.1;
-    }
-
-
-    printError("Display Godzilla");
 }
 
 void display(void){
@@ -1016,18 +736,8 @@ void display(void){
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
     displayObjects(viewMatrix);
 
-    glUseProgram(godzillaProgram);
-    if (drawGodzilla){
-    	glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-    	displaGodzilla();
-	}
-
     glUseProgram(leafProgram);
     glUniformMatrix4fv(glGetUniformLocation(leafProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-
-    glutSwapBuffers();
-    crosshair(viewMatrix);
-
     printError("display ERROR");
 
     glutSwapBuffers();
