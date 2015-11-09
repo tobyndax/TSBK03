@@ -348,10 +348,6 @@ void display(void){
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
     displayObjects(viewMatrix);
 
-    glUseProgram(leafProgram);
-    glUniformMatrix4fv(glGetUniformLocation(leafProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-    printError("display ERROR");
-
     glutSwapBuffers();
 }
 
