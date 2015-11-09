@@ -30,7 +30,7 @@ void mainVoronoi(){
   int bin[xSize][ySize][numPoints];
 
     printf("Distance \n");
-  int lastK  = 0; 
+  int lastK  = 0;
   for (int i = 0; i < xSize; i++) {
     for (int j = 0; j < ySize; j++) {
       int minDist = 8000000;
@@ -55,7 +55,7 @@ void mainVoronoi(){
 
 
   printf("First point and stacks \n");
-
+ //seems to be right
   for (int k = 0; k < numPoints; k++) {
     stack = 1;
     firstPoint = true;
@@ -64,11 +64,13 @@ void mainVoronoi(){
         if(bin[i][j][k] == 1){
           stackX[stack][k] = i;
           stackY[stack][k] = j;
-          stack++;
+          stack = stack +1;
+          //printf("%i %i %i\n", i, j, k);
           if(firstPoint){
             firstPoint = false;
             firstPoints[0][k] = i;
             firstPoints[1][k] = j;
+            printf("%i %i \n", i, j);
           }
         }
       }
@@ -99,6 +101,7 @@ void mainVoronoi(){
         (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k])) ){
           endPoint[0] = stackX[j][k];
           endPoint[1] = stackY[j][k];
+          //printf("%i %i \n", stackX[j][k],stackY[j][k]);
         }
       }
 
@@ -109,6 +112,7 @@ void mainVoronoi(){
       if(pointsOnHull[0][i][k] == pointsOnHull[0][1][k] && pointsOnHull[1][i][k] == pointsOnHull[1][1][k]){
         pointsOnHull[0][0][k] = i;
         notDone = false;
+        printf("%s \n", "Done-------------------------------------------------");
       }
     }
   }
