@@ -9,12 +9,8 @@
 #include "VectorUtils3.h"
 #include "loadobj.h"
 #include "LoadTGA.h"
-#include "bill.h"
 #include "globals.h"
 #include <math.h>
-
-vec3 billNormal;
-mat4 billRot;
 
 Model* GenerateTerrain(TextureData *tex){
     int vertexCount = tex->width * tex->height;
@@ -279,16 +275,6 @@ GLfloat getHeight(GLfloat x,GLfloat z,TextureData *tex){
     return y;
 }
 
-void initBillboard(){
-    billboardProgram = loadShaders("plaintextureshader.vert", "plaintextureshader.frag");
-
-    projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 500.0);
-
-    glUseProgram(billboardProgram);
-
-    glUniformMatrix4fv(glGetUniformLocation(billboardProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-}
-
 void initSky(){
 
     skyProgram = loadShaders("sky.vert", "sky.frag");
@@ -441,8 +427,6 @@ void init(void){
             //upVector = SetVector(0.0f,1.0f,0.0f);
         }
     }
-
-    initBillboard();
 }
 
 void yaw(vec3* orthDir,vec3* direction,int deltax){
@@ -563,13 +547,6 @@ mat4 keyInputs2(){
         camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
         upVector = SetVector(0.0,1.0,0.0);
         viewPoint = VectorAdd(camPosition,direction);
-    }
-
-    if(keyIsDown('y')){
-        firstBillboard = false;
-    }
-    if(keyIsDown('u')){
-        firstBillboard = true;
     }
 
 
