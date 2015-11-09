@@ -2,13 +2,10 @@
 
 
 
-Model *m, *m2, *tm, *sphere, *skybox, *bunny,
-*tree1,*tree2,*tree3,*tree4,*tree5,*leaves,*leaves2,*cross,*Godzilla,*Hokmuto,*Femuto,
-*GodzillaFight;
+Model *tm, *skybox;
 // Reference to shader program
 GLuint program, skyProgram, objectProgram, leafProgram,crossProgram,godzillaProgram;
-GLuint tex1, skyTex, waterTex, treeTex, snowTex, dirtTex,leafTex,crossTex;
-GLuint GodzillaTex,GlowGodzillaTex,FemutoTex,HokmutoTex;
+GLuint tex1, skyTex, waterTex, snowTex, dirtTex;
 TextureData ttex; // terrain
 
 vec3 viewPoint;
