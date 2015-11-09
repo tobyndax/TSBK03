@@ -16,21 +16,6 @@
 vec3 billNormal;
 mat4 billRot;
 
-
-GLfloat square[] = {
-							-1,-1,0,
-							-1,1, 0,
-							1,1, 0,
-							1,-1, 0};
-GLfloat squareTexCoord[] = {
-							 0, 0,
-							 0, 1,
-							 1, 1,
-							 1, 0};
-GLuint squareIndices[] = {0, 1, 2, 0, 2, 3};
-
-
-
 Model* GenerateTerrain(TextureData *tex){
     int vertexCount = tex->width * tex->height;
     int triangleCount = (tex->width-1) * (tex->height-1) * 2;
@@ -395,31 +380,6 @@ void initTerrain(){
     glUseProgram(objectProgram);
 }
 
-void initGodzilla(mat4 viewMatrix){
-	// Load and compile shader
-    godzillaProgram = loadShaders("godzilla.vert", "godzilla.frag");
-    glUseProgram(godzillaProgram);
-    printError("init godzilla shader");
-    glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-    glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-    printError("Model Loading Godzilla");
-	//--------------------Godzilla-----------------------------
-    Godzilla = LoadModelPlus("Godzilla/Godzilla.obj",godzillaProgram,"inPosition","inNormal","inTexCoord");
-    GodzillaFight = LoadModelPlus("Godzilla/GodzillaKarate.obj",godzillaProgram,"inPosition","inNormal","inTexCoord");
-
-    LoadTGATextureSimple("Godzilla/Godzilla_D.tga", &GodzillaTex);
-    LoadTGATextureSimple("Godzilla/Godzilla_E.tga", &GlowGodzillaTex);
-
-	glUseProgram(objectProgram);
-	Hokmuto = LoadModelPlus("Godzilla/Hokmuto.obj",objectProgram,"inPosition","inNormal","inTexCoord");
-    Femuto = LoadModelPlus("Godzilla/Femuto.obj",objectProgram,"inPosition","inNormal","inTexCoord");
-    LoadTGATextureSimple("Godzilla/Hokmuto_D.tga", &HokmutoTex);
-	LoadTGATextureSimple("Godzilla/Femuto_D.tga", &FemutoTex);
-
-	glUseProgram(godzillaProgram);
-    printError("Texture Loading Godzilla");
-}
-
 void init(void){
     // GL inits
 #ifdef __APPLE__
@@ -462,7 +422,6 @@ void init(void){
     initLeaves();
     initCross();
     printError("kaos --------------------");
-    initGodzilla(viewMatrix);
     //Move initially just to set everything up properly!
 
     vec3 direction = VectorSub(viewPoint,camPosition);
@@ -613,21 +572,6 @@ mat4 keyInputs2(){
     }
     if(keyIsDown('u')){
         firstBillboard = true;
-    }
-    if(keyIsDown('b')){
-    	drawGodzilla = true;
-		yGodzilla = -100.0f;
-    }
-    if(keyIsDown('n')){
-    	drawGodzilla = false;
-		yGodzilla = -100.0f;
-    }
-    if(keyIsDown('g')){
-    	glowGodzilla = true;
-    }
-
-    if(keyIsDown('h')){
-    	glowGodzilla = false;
     }
 
 
