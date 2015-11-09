@@ -421,6 +421,7 @@ void init(void){
 
   int main(int argc, char **argv){
     mainVoronoi();
+    return 0;
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
