@@ -1,4 +1,4 @@
-#version 150
+#version 130
 
 in vec2 outTexCoord;
 uniform sampler2D texUnit;
