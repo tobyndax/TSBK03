@@ -1,9 +1,9 @@
 //Project for TSBK07
 
 #ifdef __APPLE__
-#include <OpenGL/gl3.h>
-#include "mac/MicroGlut.h"
-#include <ApplicationServices/ApplicationServices.h>
+  #include <OpenGL/gl3.h>
+  #include "mac/MicroGlut.h"
+  #include <ApplicationServices/ApplicationServices.h>
 #endif
 #include "GL_utilities.h"
 #include "VectorUtils3.h"
@@ -70,9 +70,9 @@ void initTerrain(){
 
 void init(void){
     // GL inits
-#ifdef __APPLE__
-    glutHideCursor();
-#endif
+    #ifdef __APPLE__
+      glutHideCursor();
+    #endif
     glClearColor(0.2,0.2,0.5,0);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -381,10 +381,10 @@ void mouse(int x, int y)
     float centerX = 200;
     float centerY = 200;
 
-#ifdef __APPLE__
-    centerX = glutGet(GLUT_WINDOW_WIDTH)/2;
-    centerY = glutGet(GLUT_WINDOW_HEIGHT)/2;
-#endif
+    #ifdef __APPLE__
+      centerX = glutGet(GLUT_WINDOW_WIDTH)/2;
+      centerY = glutGet(GLUT_WINDOW_HEIGHT)/2;
+    #endif
 
     lastx = (float)x - lastx;
     lasty = (float)y - lasty;
@@ -408,14 +408,12 @@ void mouse(int x, int y)
     // if mouse wander off too much, warp it back.
     float dist = 100;
     if(x > centerX+dist || x < centerX-dist || y < centerY+dist || y > centerY-dist){
-#ifdef __APPLE__
+      #ifdef __APPLE__
         CGPoint warpPoint = CGPointMake(centerX,centerY);
         CGWarpMouseCursorPosition(warpPoint);
         CGAssociateMouseAndMouseCursorPosition(true);
-#endif
-#ifndef __APPLE__
         glutWarpPointer( centerX, centerY );
-#endif
+      #endif
     }
     printf("%d %d\n", deltax ,deltay);
     //printf("%d %d\n", deltax ,deltay);
@@ -428,9 +426,9 @@ int main(int argc, char **argv){
     glutInitWindowSize (600, 600);
     glutCreateWindow ("Project Orion");
     glutDisplayFunc(display);
-#ifdef __APPLE__
-    glutFullScreen();
-#endif
+    #ifdef __APPLE__
+      glutFullScreen();
+      #endif
     init ();
     initKeymapManager();
     glutTimerFunc(20, &timer, 0);
