@@ -79,14 +79,13 @@ void init(void){
     printError("GL inits");
 
     projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 500.0);
-    
+
     // Load and compile shader
     objectProgram = loadShaders("object.vert", "object.frag");
     glUseProgram(objectProgram);
     printError("init shader");
 
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-    LoadTGATextureSimple("bark.tga", &treeTex);
 
     viewPoint = SetVector(100.0f,0.0f,80.0f);
     camPosition = SetVector(100.0f,0.0f,90.0f);
@@ -330,18 +329,6 @@ void displayObjects(mat4 viewMatrix){
     GLfloat camPos[] = {camPosition.x, camPosition.y, camPosition.z};
     glUniform3fv(glGetUniformLocation(objectProgram, "camPosition"), 1, camPos);
 
-
-    //----------------TreeTexture-------------------
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, treeTex);
-    glUniform1i(glGetUniformLocation(objectProgram, "tex"), 0); // Texture unit 0
-
-    /*
-    //----------------LeafTexture-------------------
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, leafTex);
-    glUniform1i(glGetUniformLocation(leafProgram, "texUnit"), 0); // Texture unit 0
-    */
     printError("Program objects ERROR");
 }
 
