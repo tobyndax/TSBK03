@@ -269,7 +269,6 @@ mat4 keyInputs2(){
     deltax = 0;
     deltay = 0;
 
-
     //printf("%f\n", getHeight(camPosition.x,camPosition.z,&ttex));
     //camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex);
     //viewPoint.y = getHeight(viewPoint.x,viewPoint.z,&ttex);
@@ -355,6 +354,15 @@ void display(void){
     glUseProgram(objectProgram);
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
     displayObjects(viewMatrix);
+
+    glUseProgram(objectProgram);
+
+    mat4 trans = T(100.0f,2.0f,90.0f);
+
+    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans.m);
+    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
+    DrawModel(squareModel,objectProgram,"inPosition",NULL,NULL);
+
 
     glutSwapBuffers();
 }
