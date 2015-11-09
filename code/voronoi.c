@@ -30,16 +30,17 @@ void mainVoronoi(){
   int bin[xSize][ySize][numPoints];
 
     printf("Distance \n");
-
-  for (int j = 0; j < xSize; j++) {
-    for (int i = 0; i < ySize; i++) {
-      int minDist = pow((pointsX[0] - i),2) + pow((pointsY[0]-j),2);
-      bin[i][j][0] = 1;
-      for (int k = 1; k < numPoints; k++) {
+  int lastK  = 0; 
+  for (int i = 0; i < xSize; i++) {
+    for (int j = 0; j < ySize; j++) {
+      int minDist = 8000000;
+      for (int k = 0; k < numPoints; k++) {
         int tmpDist = pow((pointsX[k] - i),2) + pow((pointsY[k]-j),2);
         if(tmpDist < minDist){
           minDist = tmpDist;
+          bin[i][j][lastK] = 0;
           bin[i][j][k] = 1;
+          lastK = k;
         }
       }
     }
@@ -58,8 +59,8 @@ void mainVoronoi(){
   for (int k = 0; k < numPoints; k++) {
     stack = 1;
     firstPoint = true;
-    for (int j = 0; j < ySize; j++) {
-      for (int i = 0; i < xSize; i++) {
+    for (int i = 0; i < xSize; i++) {
+      for (int j = 0; j < ySize; j++) {
         if(bin[i][j][k] == 1){
           stackX[stack][k] = i;
           stackY[stack][k] = j;
@@ -82,7 +83,7 @@ void mainVoronoi(){
 
   printf("Gift Wrapping: numPoints: %i stack: %i \n", numPoints, stackX[0][0]);
 
-  for (int k = 0; k < numPoints; k++) {
+  for (int k = 1; k < numPoints; k++) {
     printf("%i\n", k);
     int i = 1;
     notDone = true;
@@ -98,7 +99,6 @@ void mainVoronoi(){
         (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k])) ){
           endPoint[0] = stackX[j][k];
           endPoint[1] = stackY[j][k];
-          //printf(" %i",j);
         }
       }
 
