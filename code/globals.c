@@ -2,25 +2,15 @@
 
 
 
-Model *m, *m2, *tm, *sphere, *skybox, *bunny,
-*tree1,*tree2,*tree3,*tree4,*tree5,*leaves,*leaves2,*cross,*Godzilla,*Hokmuto,*Femuto,
-*GodzillaFight;
+Model *tm, *skybox;
 // Reference to shader program
-GLuint program, skyProgram, objectProgram, leafProgram,crossProgram,godzillaProgram;
-GLuint tex1, skyTex, waterTex, treeTex, snowTex, dirtTex,leafTex,crossTex;
-GLuint GodzillaTex,GlowGodzillaTex,FemutoTex,HokmutoTex;
+GLuint program, skyProgram, objectProgram;
+GLuint tex1, skyTex, waterTex, snowTex, dirtTex;
 TextureData ttex; // terrain
 
 vec3 viewPoint;
 vec3 camPosition;
 vec3 upVector;
-
-GLfloat xSphere =30.0;
-GLfloat zSphere =30.0;
-
-GLfloat xGodzilla = 70.0;
-GLfloat zGodzilla = 90.0;
-GLfloat yGodzilla = -100.0;
 
 int deltax = 0;
 int deltay = 0;
@@ -38,18 +28,14 @@ GLfloat squareTexCoord[] = {
 							 1, 1,
 							 1, 0};
 
-bool firstBillboard = true;
 bool hasMoved = false;
-bool drawGodzilla = false;
-bool glowGodzilla = false;
 GLuint squareIndices[] = {0, 1, 2, 0, 2, 3};
 
 Model* squareModel;
 
-FBOstruct *fbo1;
 
 // vertex array object
-GLuint billboardProgram,plaintextureshader;
+GLuint plaintextureshader;
 
 Point3D lightSourcesColorsArr[] = { {1.0f, 0.0f, 0.0f}, // Red light
     {0.0f, 1.0f, 0.0f}, // Green light
