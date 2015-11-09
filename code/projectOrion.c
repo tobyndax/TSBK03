@@ -419,8 +419,6 @@ void init(void){
 
     initTerrain();
     initSky();
-    initLeaves();
-    initCross();
     printError("kaos --------------------");
     //Move initially just to set everything up properly!
 
