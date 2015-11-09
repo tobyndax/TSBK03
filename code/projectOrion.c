@@ -406,31 +406,6 @@ void initCross(void){
 
 }
 
-void initGodzilla(mat4 viewMatrix){
-	// Load and compile shader
-    godzillaProgram = loadShaders("godzilla.vert", "godzilla.frag");
-    glUseProgram(godzillaProgram);
-    printError("init godzilla shader");
-    glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-    glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-    printError("Model Loading Godzilla");
-	//--------------------Godzilla-----------------------------
-    Godzilla = LoadModelPlus("Godzilla/Godzilla.obj",godzillaProgram,"inPosition","inNormal","inTexCoord");
-    GodzillaFight = LoadModelPlus("Godzilla/GodzillaKarate.obj",godzillaProgram,"inPosition","inNormal","inTexCoord");
-
-    LoadTGATextureSimple("Godzilla/Godzilla_D.tga", &GodzillaTex);
-    LoadTGATextureSimple("Godzilla/Godzilla_E.tga", &GlowGodzillaTex);
-
-	glUseProgram(objectProgram);
-	Hokmuto = LoadModelPlus("Godzilla/Hokmuto.obj",objectProgram,"inPosition","inNormal","inTexCoord");
-    Femuto = LoadModelPlus("Godzilla/Femuto.obj",objectProgram,"inPosition","inNormal","inTexCoord");
-    LoadTGATextureSimple("Godzilla/Hokmuto_D.tga", &HokmutoTex);
-	LoadTGATextureSimple("Godzilla/Femuto_D.tga", &FemutoTex);
-
-	glUseProgram(godzillaProgram);
-    printError("Texture Loading Godzilla");
-}
-
 void init(void){
     // GL inits
 #ifdef __APPLE__
@@ -473,7 +448,6 @@ void init(void){
     initLeaves();
     initCross();
     printError("kaos --------------------");
-    initGodzilla(viewMatrix);
     //Move initially just to set everything up properly!
 
     vec3 direction = VectorSub(viewPoint,camPosition);
@@ -624,21 +598,6 @@ mat4 keyInputs2(){
     }
     if(keyIsDown('u')){
         firstBillboard = true;
-    }
-    if(keyIsDown('b')){
-    	drawGodzilla = true;
-		yGodzilla = -100.0f;
-    }
-    if(keyIsDown('n')){
-    	drawGodzilla = false;
-		yGodzilla = -100.0f;
-    }
-    if(keyIsDown('g')){
-    	glowGodzilla = true;
-    }
-
-    if(keyIsDown('h')){
-    	glowGodzilla = false;
     }
 
 
@@ -921,85 +880,6 @@ void displayBillboard(mat4 viewMatrix){
     printError("billboard ERROR");
 }
 
-void displaGodzilla(){
-
-	mat4 scale,trans,total,modelView;
-
-
-		//----------------GodzillaTexture-------------------
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, GodzillaTex);
-	glUniform1i(glGetUniformLocation(godzillaProgram, "tex"), 0); // Texture unit 0
-
-	glActiveTexture(GL_TEXTURE1);
-	if(glowGodzilla){
-		glBindTexture(GL_TEXTURE_2D, GlowGodzillaTex);
-	}else{
-		glBindTexture(GL_TEXTURE_2D, GodzillaTex);
-	}
-	glUniform1i(glGetUniformLocation(godzillaProgram, "glowTex"), 1); // Texture unit 1
-	//----------------Godzilla-------------------------
-
-	GLfloat Sc = 0.5;
-	if(!glowGodzilla){
-		modelView = Ry(-M_PI/4);
-		scale = S(Sc,Sc,Sc);
-		trans = T(xGodzilla,yGodzilla,zGodzilla);
-		total = Mult(trans,Mult(modelView,scale));
-		glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-	    glBindVertexArray(Godzilla->vao);    // Select VAO
-	    DrawModel(Godzilla, godzillaProgram, "inPosition", "inNormal", "inTexCoord");
-	}
-
-	else if(glowGodzilla){
-		Sc = 0.5; //0.8 är bra för GodzillaFight
-		modelView = Ry(-M_PI/4);
-		scale = S(Sc,Sc,Sc);
-		trans = T(xGodzilla,yGodzilla,zGodzilla);
-		total = Mult(trans,Mult(modelView,scale));
-    	glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-    	glBindVertexArray(GodzillaFight->vao);    // Select VAO
-    	DrawModel(GodzillaFight, godzillaProgram, "inPosition", "inNormal", "inTexCoord");
-
-    	glUseProgram(objectProgram);
-    	//----------------Hokmuto---------------------------
-    	glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, HokmutoTex);
-		glUniform1i(glGetUniformLocation(objectProgram, "tex"), 0); // Texture unit 0
-	    GLfloat xH = 200.0;
-	    GLfloat zH = 100.0;
-	    modelView = Ry(M_PI/2);
-		scale = S(0.2,0.2,0.2);
-		trans = T(xH,getHeight(xH,zH,&ttex),zH);
-		total = Mult(trans,Mult(modelView,scale));
-		glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-	    glBindVertexArray(Hokmuto->vao);    // Select VAO
-	    DrawModel(Hokmuto, objectProgram, "inPosition", "inNormal", "inTexCoord");
-
-	    //---------------------Femuto--------------------
-	    glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, FemutoTex);
-
-	    GLfloat xF = 100.0;
-	    GLfloat zF = 200.0;
-	    modelView = Ry(M_PI);
-		scale = S(0.2,0.2,0.2);
-		trans = T(xF,getHeight(xF,zF,&ttex),zF);
-		total = Mult(trans,Mult(modelView,scale));
-		glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, total.m);
-	    glBindVertexArray(Femuto->vao);    // Select VAO
-	    DrawModel(Femuto, objectProgram, "inPosition", "inNormal", "inTexCoord");
-	}
-	glUseProgram(godzillaProgram);
-
-	if(yGodzilla<0){
-    	yGodzilla = yGodzilla + 0.1;
-    }
-
-
-    printError("Display Godzilla");
-}
-
 void display(void){
     // clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1015,12 +895,6 @@ void display(void){
     glUseProgram(objectProgram);
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
     displayObjects(viewMatrix);
-
-    glUseProgram(godzillaProgram);
-    if (drawGodzilla){
-    	glUniformMatrix4fv(glGetUniformLocation(godzillaProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-    	displaGodzilla();
-	}
 
     glUseProgram(leafProgram);
     glUniformMatrix4fv(glGetUniformLocation(leafProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
