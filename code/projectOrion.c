@@ -1,9 +1,9 @@
 //Project for TSBK07
 
 #ifdef __APPLE__
-  #include <OpenGL/gl3.h>
-  #include "mac/MicroGlut.h"
-  #include <ApplicationServices/ApplicationServices.h>
+#include <OpenGL/gl3.h>
+#include "mac/MicroGlut.h"
+#include <ApplicationServices/ApplicationServices.h>
 #endif
 #include "GL_utilities.h"
 #include "VectorUtils3.h"
@@ -12,106 +12,107 @@
 #include "globals.h"
 #include "terrain.h"
 #include <math.h>
+#include "voronoi.h"
 
 bool shatter = false;
 
 void initSky(){
 
-    skyProgram = loadShaders("sky.vert", "sky.frag");
-    glUseProgram(skyProgram);
+  skyProgram = loadShaders("sky.vert", "sky.frag");
+  glUseProgram(skyProgram);
 
 
-    glUniformMatrix4fv(glGetUniformLocation(skyProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-    printError("pre skybox load ERROR");
-    LoadTGATextureSimple("SkyBox512.tga", &skyTex);
+  glUniformMatrix4fv(glGetUniformLocation(skyProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+  printError("pre skybox load ERROR");
+  LoadTGATextureSimple("SkyBox512.tga", &skyTex);
 
 
-    mat4 viewMatrix=lookAtv(camPosition,viewPoint, upVector);
-    glUniformMatrix4fv(glGetUniformLocation(skyProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
+  mat4 viewMatrix=lookAtv(camPosition,viewPoint, upVector);
+  glUniformMatrix4fv(glGetUniformLocation(skyProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-    printError("pre skybox load ERROR2");
+  printError("pre skybox load ERROR2");
 
-    //--------------------skybox------------------------------
-    skybox = LoadModelPlus("skybox.obj",
-                           skyProgram,
-                           "inPosition",
-                           "inNormal",
-                           "inTexCoord");
-    printError("skybox.obj load Error");
-    glUseProgram(objectProgram);
+  //--------------------skybox------------------------------
+  skybox = LoadModelPlus("skybox.obj",
+  skyProgram,
+  "inPosition",
+  "inNormal",
+  "inTexCoord");
+  printError("skybox.obj load Error");
+  glUseProgram(objectProgram);
 }
 
 void initTerrain(){
-    program = loadShaders("terrain4.vert", "terrain4.frag");
-    glUseProgram(program);
+  program = loadShaders("terrain4.vert", "terrain4.frag");
+  glUseProgram(program);
 
-    glUniformMatrix4fv(glGetUniformLocation(program, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
-    LoadTGATextureSimple("grass.tga", &tex1);
-    LoadTGATextureSimple("poolwater.tga", &waterTex);
-    LoadTGATextureSimple("snow.tga", &snowTex);
-    LoadTGATextureSimple("dirt.tga", &dirtTex);
+  glUniformMatrix4fv(glGetUniformLocation(program, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+  LoadTGATextureSimple("grass.tga", &tex1);
+  LoadTGATextureSimple("poolwater.tga", &waterTex);
+  LoadTGATextureSimple("snow.tga", &snowTex);
+  LoadTGATextureSimple("dirt.tga", &dirtTex);
 
-    mat4 viewMatrix=lookAtv(camPosition,viewPoint, upVector);
-    glUniformMatrix4fv(glGetUniformLocation(program, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
+  mat4 viewMatrix=lookAtv(camPosition,viewPoint, upVector);
+  glUniformMatrix4fv(glGetUniformLocation(program, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-    //----------------terrain data -----------------------
+  //----------------terrain data -----------------------
 
-    LoadTGATextureData("fft-terrain.tga", &ttex);
-    tm = GenerateTerrain(&ttex);
-    printError("init terrain");
+  LoadTGATextureData("fft-terrain.tga", &ttex);
+  tm = GenerateTerrain(&ttex);
+  printError("init terrain");
 
-    glUniform3fv(glGetUniformLocation(program, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
-    glUniform3fv(glGetUniformLocation(program, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
-    glUniform1fv(glGetUniformLocation(program, "specularExponent"), 4, specularExponent);
-    glUniform1iv(glGetUniformLocation(program, "isDirectional"), 4, isDirectional);
+  glUniform3fv(glGetUniformLocation(program, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
+  glUniform3fv(glGetUniformLocation(program, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
+  glUniform1fv(glGetUniformLocation(program, "specularExponent"), 4, specularExponent);
+  glUniform1iv(glGetUniformLocation(program, "isDirectional"), 4, isDirectional);
 
-    glUseProgram(objectProgram);
+  glUseProgram(objectProgram);
 }
 
 void init(void){
-    // GL inits
-    #ifdef __APPLE__
-      glutHideCursor();
-    #endif
-    glClearColor(0.2,0.2,0.5,0);
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    printError("GL inits");
+  // GL inits
+  #ifdef __APPLE__
+  glutHideCursor();
+  #endif
+  glClearColor(0.2,0.2,0.5,0);
+  glEnable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  printError("GL inits");
 
-    projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 500.0);
+  projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 500.0);
 
-    // Load and compile shader
-    objectProgram = loadShaders("object.vert", "object.frag");
-    glUseProgram(objectProgram);
-    printError("init shader");
+  // Load and compile shader
+  objectProgram = loadShaders("object.vert", "object.frag");
+  glUseProgram(objectProgram);
+  printError("init shader");
 
-    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+  glUniformMatrix4fv(glGetUniformLocation(objectProgram, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
 
-    viewPoint = SetVector(100.0f,0.0f,80.0f);
-    camPosition = SetVector(100.0f,0.0f,90.0f);
-    GLfloat y=getHeight(camPosition.x,camPosition.z,&ttex)+10;
-    camPosition.y = y;
-    viewPoint.y = y;
-    upVector = SetVector(0.0f,1.0f,0.0f);
+  viewPoint = SetVector(100.0f,0.0f,80.0f);
+  camPosition = SetVector(100.0f,0.0f,90.0f);
+  GLfloat y=getHeight(camPosition.x,camPosition.z,&ttex)+10;
+  camPosition.y = y;
+  viewPoint.y = y;
+  upVector = SetVector(0.0f,1.0f,0.0f);
 
-    mat4 viewMatrix=lookAtv(camPosition,viewPoint, upVector);
-    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-    //--------------------Tree1------------------------------
+  mat4 viewMatrix=lookAtv(camPosition,viewPoint, upVector);
+  glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
+  //--------------------Tree1------------------------------
 
-    glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
-    glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
-    glUniform1fv(glGetUniformLocation(objectProgram, "specularExponent"), 4, specularExponent);
-    glUniform1iv(glGetUniformLocation(objectProgram, "isDirectional"), 4, isDirectional);
+  glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
+  glUniform3fv(glGetUniformLocation(objectProgram, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
+  glUniform1fv(glGetUniformLocation(objectProgram, "specularExponent"), 4, specularExponent);
+  glUniform1iv(glGetUniformLocation(objectProgram, "isDirectional"), 4, isDirectional);
 
-    initTerrain();
-    initSky();
-    printError("Init sky + terrain");
-    //Move initially just to set everything up properly!
+  initTerrain();
+  initSky();
+  printError("Init sky + terrain");
+  //Move initially just to set everything up properly!
 
 
-    squareModel = LoadDataToModel(
-  			square, NULL, squareTexCoord, NULL,
-  			squareIndices, 4, 6);
+  squareModel = LoadDataToModel(
+    square, NULL, squareTexCoord, NULL,
+    squareIndices, 4, 6);
 
 
 
@@ -123,38 +124,38 @@ void init(void){
 
 
     if((camPosition.x<=2 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
-       (camPosition.x>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
-       (camPosition.z<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
-       (camPosition.z>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
-       (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
-        if(true){
-            hasMoved = true;
-            camPosition = VectorAdd(camPosition,ScalarMult(direction,0.05f));
-            camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
-            viewPoint = VectorAdd(camPosition,direction);
-            //upVector = SetVector(0.0f,1.0f,0.0f);
-        }
+    (camPosition.x>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
+    (camPosition.z<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
+    (camPosition.z>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
+    (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
+      if(true){
+        hasMoved = true;
+        camPosition = VectorAdd(camPosition,ScalarMult(direction,0.05f));
+        camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
+        viewPoint = VectorAdd(camPosition,direction);
+        //upVector = SetVector(0.0f,1.0f,0.0f);
+      }
     }
-}
+  }
 
-void yaw(vec3* orthDir,vec3* direction,int deltax){
+  void yaw(vec3* orthDir,vec3* direction,int deltax){
     mat4 latRot = Ry(0.005f*deltax);
     *direction=MultVec3(latRot,*direction);
     viewPoint = VectorAdd(camPosition,*direction);
     *orthDir = Normalize(CrossProduct(*direction,upVector));
     orthDir->y = 0;
     return;
-}
+  }
 
-void pitch(vec3* orthDir,vec3* direction,int deltay){
+  void pitch(vec3* orthDir,vec3* direction,int deltay){
     mat4 latRot = ArbRotate(*orthDir, 0.005f*deltay);
     *direction=MultVec3(latRot,*direction);
     upVector=Normalize(CrossProduct(*orthDir,*direction));
     viewPoint = VectorAdd(camPosition,*direction);
     return;
-}
+  }
 
-mat4 keyInputs2(){
+  mat4 keyInputs2(){
     //-----------------------key inputs-----------------------------------
 
 
@@ -164,102 +165,102 @@ mat4 keyInputs2(){
     orthDir = Normalize(orthDir);
 
     if(keyIsDown('k')){
-        mat4 latRot = ArbRotate(orthDir, 0.05);
-        direction=MultVec3(latRot,direction);
-        upVector=MultVec3(latRot,upVector);
-        viewPoint = VectorAdd(camPosition,direction);
+      mat4 latRot = ArbRotate(orthDir, 0.05);
+      direction=MultVec3(latRot,direction);
+      upVector=MultVec3(latRot,upVector);
+      viewPoint = VectorAdd(camPosition,direction);
     }
     if(keyIsDown('i')){
-        mat4 latRot = ArbRotate(orthDir, -0.05);
-        direction=MultVec3(latRot,direction);
-        upVector=MultVec3(latRot,upVector);
-        viewPoint = VectorAdd(camPosition,direction);
+      mat4 latRot = ArbRotate(orthDir, -0.05);
+      direction=MultVec3(latRot,direction);
+      upVector=MultVec3(latRot,upVector);
+      viewPoint = VectorAdd(camPosition,direction);
     }
 
     if((camPosition.x<=2 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
-       (camPosition.x>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
-       (camPosition.z<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
-       (camPosition.z>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
-       (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
-        if(keyIsDown('w')){
-            hasMoved = true;
-            camPosition = VectorAdd(camPosition,ScalarMult(direction,0.05f));
-            camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
-            viewPoint = VectorAdd(camPosition,direction);
-            //upVector = SetVector(0.0f,1.0f,0.0f);
-        }
+    (camPosition.x>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
+    (camPosition.z<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
+    (camPosition.z>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
+    (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
+      if(keyIsDown('w')){
+        hasMoved = true;
+        camPosition = VectorAdd(camPosition,ScalarMult(direction,0.05f));
+        camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
+        viewPoint = VectorAdd(camPosition,direction);
+        //upVector = SetVector(0.0f,1.0f,0.0f);
+      }
     }
 
     if((camPosition.x<=2 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
-       (camPosition.x>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
-       (camPosition.z<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
-       (camPosition.z>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
-       (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
-        if(keyIsDown('s')){
-            camPosition = VectorAdd(camPosition,ScalarMult(direction,-0.05f));
-            camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
-            viewPoint = VectorAdd(camPosition,direction);
-            //upVector = SetVector(0.0f,1.0f,0.0f);
-        }
+    (camPosition.x>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
+    (camPosition.z<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
+    (camPosition.z>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
+    (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
+      if(keyIsDown('s')){
+        camPosition = VectorAdd(camPosition,ScalarMult(direction,-0.05f));
+        camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
+        viewPoint = VectorAdd(camPosition,direction);
+        //upVector = SetVector(0.0f,1.0f,0.0f);
+      }
     }
 
     if(keyIsDown('q')){
-        mat4 latRot = ArbRotate(upVector, 0.1f);
-        direction=MultVec3(latRot,direction);
-        viewPoint = VectorAdd(camPosition,direction);
+      mat4 latRot = ArbRotate(upVector, 0.1f);
+      direction=MultVec3(latRot,direction);
+      viewPoint = VectorAdd(camPosition,direction);
     }
 
     if(keyIsDown('e')){
-        mat4 latRot = ArbRotate(upVector, -0.1f);
-        direction=MultVec3(latRot,direction);
-        viewPoint = VectorAdd(camPosition,direction);
+      mat4 latRot = ArbRotate(upVector, -0.1f);
+      direction=MultVec3(latRot,direction);
+      viewPoint = VectorAdd(camPosition,direction);
     }
     if((camPosition.x<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
-       (camPosition.x>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
-       (camPosition.z<=2 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
-       (camPosition.z>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
-       (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
-        if(keyIsDown('a')){
-            camPosition = VectorAdd(camPosition,ScalarMult(orthDir,-0.05f));
+    (camPosition.x>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
+    (camPosition.z<=2 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
+    (camPosition.z>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
+    (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
+      if(keyIsDown('a')){
+        camPosition = VectorAdd(camPosition,ScalarMult(orthDir,-0.05f));
 
-            camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
-            viewPoint = VectorAdd(camPosition,direction);
-            //upVector = SetVector(0.0f,1.0f,0.0f);
-        }
+        camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
+        viewPoint = VectorAdd(camPosition,direction);
+        //upVector = SetVector(0.0f,1.0f,0.0f);
+      }
     }
 
 
     if((camPosition.x<=2 && DotProduct(SetVector(0.0,0.0,1.0), direction)<0) ||
-       (camPosition.x>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
-       (camPosition.z<=2 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
-       (camPosition.z>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
-       (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
-        if(keyIsDown('d')){
-            camPosition = VectorAdd(camPosition,ScalarMult(orthDir,0.05f));
+    (camPosition.x>=254 && DotProduct(SetVector(0.0,0.0,1.0), direction)>0) ||
+    (camPosition.z<=2 && DotProduct(SetVector(1.0,0.0,0.0), direction)>0) ||
+    (camPosition.z>=254 && DotProduct(SetVector(1.0,0.0,0.0), direction)<0) ||
+    (camPosition.x>2 && camPosition.x<254 && camPosition.z>2 && camPosition.z<254)){
+      if(keyIsDown('d')){
+        camPosition = VectorAdd(camPosition,ScalarMult(orthDir,0.05f));
 
-            camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
-            viewPoint = VectorAdd(camPosition,direction);
-            //upVector = SetVector(0.0f,1.0f,0.0f);
-        }
+        camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
+        viewPoint = VectorAdd(camPosition,direction);
+        //upVector = SetVector(0.0f,1.0f,0.0f);
+      }
     }
 
     if(keyIsDown('j')){
-        mat4 latRot = ArbRotate(direction, -0.1f);
-        upVector=MultVec3(latRot,upVector);
+      mat4 latRot = ArbRotate(direction, -0.1f);
+      upVector=MultVec3(latRot,upVector);
     }
     if(keyIsDown('l')){
-        mat4 latRot = ArbRotate(direction, 0.1f);
-        upVector=MultVec3(latRot,upVector);
+      mat4 latRot = ArbRotate(direction, 0.1f);
+      upVector=MultVec3(latRot,upVector);
     }
 
     if(keyIsDown('h')){
-        shatter = true;
+      shatter = true;
     }
 
     if(camPosition.y < getHeight(camPosition.x,camPosition.z,&ttex)+1.0){
-        camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
-        upVector = SetVector(0.0,1.0,0.0);
-        viewPoint = VectorAdd(camPosition,direction);
+      camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex)+1.0;
+      upVector = SetVector(0.0,1.0,0.0);
+      viewPoint = VectorAdd(camPosition,direction);
     }
 
 
@@ -273,9 +274,9 @@ mat4 keyInputs2(){
     //camPosition.y = getHeight(camPosition.x,camPosition.z,&ttex);
     //viewPoint.y = getHeight(viewPoint.x,viewPoint.z,&ttex);
     return lookAtv(camPosition,viewPoint, upVector);
-}
+  }
 
-void displaySkybox(mat4 viewMatrix){
+  void displaySkybox(mat4 viewMatrix){
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, skyTex);
@@ -298,9 +299,9 @@ void displaySkybox(mat4 viewMatrix){
     glDepthMask(GL_TRUE);
     printError("Skybox ERROR");
 
-}
+  }
 
-void displayTerrain(){
+  void displayTerrain(){
 
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, dirtTex);
@@ -327,9 +328,9 @@ void displayTerrain(){
     glUniformMatrix4fv(glGetUniformLocation(program, "mdlMatrix"), 1, GL_TRUE, total.m);
     DrawModel(tm, program, "inPosition", "inNormal", "inTexCoord");
 
-}
+  }
 
-void displayObjects(mat4 viewMatrix){
+  void displayObjects(mat4 viewMatrix){
     mat4 total, modelView, trans;
 
     //-----------------light------------------------
@@ -337,9 +338,9 @@ void displayObjects(mat4 viewMatrix){
     glUniform3fv(glGetUniformLocation(objectProgram, "camPosition"), 1, camPos);
 
     printError("Program objects ERROR");
-}
+  }
 
-void display(void){
+  void display(void){
     // clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -365,24 +366,24 @@ void display(void){
 
 
     glutSwapBuffers();
-}
+  }
 
-void timer(int i)
-{
+  void timer(int i)
+  {
     glutTimerFunc(20, &timer, i);
     glutPostRedisplay();
-}
+  }
 
-void mouse(int x, int y)
-{
+  void mouse(int x, int y)
+  {
     static int lastx = 0.0;
     static int lasty = 0.0;
     float centerX = 200;
     float centerY = 200;
 
     #ifdef __APPLE__
-      centerX = glutGet(GLUT_WINDOW_WIDTH)/2;
-      centerY = glutGet(GLUT_WINDOW_HEIGHT)/2;
+    centerX = glutGet(GLUT_WINDOW_WIDTH)/2;
+    centerY = glutGet(GLUT_WINDOW_HEIGHT)/2;
     #endif
 
     lastx = (float)x - lastx;
@@ -393,32 +394,34 @@ void mouse(int x, int y)
 
     if((abs((int)lastx)>50) || (abs((int)lasty)>50))
     {
-        deltax = 0;
-        deltay = 0;
+      deltax = 0;
+      deltay = 0;
 
-        lastx = (float)x;
-        lasty = (float)y;
+      lastx = (float)x;
+      lasty = (float)y;
 
-        return;
+      return;
 
     }
     /*Fix for quartz issue found at http://stackoverflow.com/questions/10196603/using-cgeventsourcesetlocaleventssuppressioninterval-instead-of-the-deprecated/17547015#17547015
-     */
+    */
     // if mouse wander off too much, warp it back.
     float dist = 100;
     if(x > centerX+dist || x < centerX-dist || y < centerY+dist || y > centerY-dist){
       #ifdef __APPLE__
-        CGPoint warpPoint = CGPointMake(centerX,centerY);
-        CGWarpMouseCursorPosition(warpPoint);
-        CGAssociateMouseAndMouseCursorPosition(true);
-        glutWarpPointer( centerX, centerY );
+      CGPoint warpPoint = CGPointMake(centerX,centerY);
+      CGWarpMouseCursorPosition(warpPoint);
+      CGAssociateMouseAndMouseCursorPosition(true);
+      glutWarpPointer( centerX, centerY );
       #endif
     }
     printf("%d %d\n", deltax ,deltay);
     //printf("%d %d\n", deltax ,deltay);
-}
+  }
 
-int main(int argc, char **argv){
+  int main(int argc, char **argv){
+    mainVoronoi();
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
     glutInitContextVersion(3, 2);
@@ -426,14 +429,17 @@ int main(int argc, char **argv){
     glutCreateWindow ("Project Orion");
     glutDisplayFunc(display);
     #ifdef __APPLE__
-      glutFullScreen();
-      #endif
+    glutFullScreen();
+    #endif
     init ();
     initKeymapManager();
+
+
+
     glutTimerFunc(20, &timer, 0);
 
     glutPassiveMotionFunc(mouse);
 
     glutMainLoop();
     exit(0);
-}
+  }

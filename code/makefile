@@ -21,9 +21,9 @@ endif
 
 
 #Compiler flags, enable warnings and c99 standard
-GCCFLAGS = -Wall -std=c99
+GCCFLAGS = -Wall -std=c99 -g3
 #Binaries that are needed for all sub-compilations
-BINARIES = GL_utilities.c loadobj.c VectorUtils3.c LoadTGA.c MicroGlut.o globals.c terrain.c
+BINARIES = GL_utilities.c loadobj.c VectorUtils3.c LoadTGA.c MicroGlut.o globals.c terrain.c voronoi.c
 
 
 all: orion
