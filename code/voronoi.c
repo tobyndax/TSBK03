@@ -8,6 +8,35 @@
 #include "mac/MicroGlut.h"
 #include <ApplicationServices/ApplicationServices.h>
 #endif
+// The following functions are from http://www.mas.ncl.ac.uk/~ndjw1/teaching/sim/transf/norm.c
+float surand()
+{
+  return( (float) rand()/RAND_MAX );
+}
+
+float urand(float low, float high)
+{
+  return(low+(high-low)*surand());
+}
+
+float genexp(float lambda)
+{
+  float u,x;
+  u=surand();
+  x=(-1/lambda)*log(u);
+  return(x);
+}
+
+float gennor(GLfloat conc)
+{
+  float theta,rsq,x;
+  theta=urand(0,2*M_PI);
+  rsq=genexp(conc);
+  x=sqrt(rsq)*cos(theta);
+  return(x);
+}
+
+// end of http://www.mas.ncl.ac.uk/~ndjw1/teaching/sim/transf/norm.c
 
 
 bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double firstY){
@@ -34,34 +63,40 @@ bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double fir
 }
 
 struct Fragment** mainVoronoi(){
-  int numPoints = 5;
-  int pointsX[] = {25,75,25,75,55};
-  int pointsY[] = {25,25,75,75,30};
+  int numPoints = 75;
+  int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
+  int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
+  GLfloat t;
+  GLfloat conc = 5;
+  for (int i = 0; i < numPoints; i++) {
+    t = round((gennor(conc)*50)+50);
+    while(t > 99 || t < 0 ){
+      t = round((gennor(conc)*50)+50);
+    }
+    pointsX[i] = t;
+    t = round((gennor(conc)*50)+50);
+    while(t > 99 || t < 0 ){
+      t = round((gennor(conc)*50)+50);
+    }
+    pointsY[i] = t;
+  }
+
   int xSize = 100;
   int ySize = 100;
   int bin[xSize][ySize][numPoints];
 
-  printf("Distance \n");
+  //printf("Distance \n");
   int lastK  = 0;
   for (int i = 0; i < xSize; i++) {
     for (int j = 0; j < ySize; j++) {
       int minDist = 8000000;
       for (int k = 0; k < numPoints; k++) {
         bin[i][j][k] = 0;
-        int tmpDist = pow((pointsX[k] - i),2) + pow((GLfloat)(pointsY[k]-j)/3.0f,2);
+        int tmpDist = pow((pointsX[k] - i),2) + pow((GLfloat)(pointsY[k]-j),2);
         if(tmpDist < minDist){
           minDist = tmpDist;
           bin[i][j][lastK] = 0;
           bin[i][j][k] = 1;
-
-
-          if(i==99 && j==43){
-            printf("bin[lastK]: %i \n",bin[i][j][lastK]);
-            printf("lastK: %i \n",lastK);
-            printf("bin[k]: %i \n",bin[i][j][k]);
-            printf("k: %i \n\n",k);
-            int apa=1;
-          }
           lastK = k;
         }
       }
@@ -69,14 +104,14 @@ struct Fragment** mainVoronoi(){
   }
 
   int firstPoints[2][numPoints];
-  int pointsOnHull[2][100][numPoints];
+  int pointsOnHull[2][1000][numPoints];
   int stackX[xSize*ySize][numPoints];
   int stackY[xSize*ySize][numPoints];
   int stack = 0;
   bool firstPoint = true;
 
 
-  printf("First point and stacks \n");
+  //printf("First point and stacks \n");
   //seems to be right
   for (int k = 0; k < numPoints; k++) {
     stack = 1;
@@ -87,12 +122,12 @@ struct Fragment** mainVoronoi(){
           stackX[stack][k] = i;
           stackY[stack][k] = j;
           stack = stack +1;
-          //printf("%i %i %i\n", i, j, k);
+          ////printf("%i %i %i\n", i, j, k);
           if(firstPoint){
             firstPoint = false;
             firstPoints[0][k] = i;
             firstPoints[1][k] = j;
-            printf("%i %i \n", i, j);
+            //printf("%i %i \n", i, j);
           }
         }
       }
@@ -105,12 +140,12 @@ struct Fragment** mainVoronoi(){
 
   bool notDone;
 
-  printf("Gift Wrapping: numPoints: %i stack: %i \n", numPoints, stackX[0][0]);
-  printf("First points: %i : %i   %i : %i   %i : %i   %i : %i  \n", firstPoints[0][0], firstPoints[1][0], firstPoints[0][1], firstPoints[1][1]
-  , firstPoints[0][2], firstPoints[1][2], firstPoints[0][3], firstPoints[1][3]);
+  //printf("Gift Wrapping: numPoints: %i stack: %i \n", numPoints, stackX[0][0]);
+  //printf("First points: %i : %i   %i : %i   %i : %i   %i : %i  \n", firstPoints[0][0], firstPoints[1][0], firstPoints[0][1], firstPoints[1][1]
+  //, firstPoints[0][2], firstPoints[1][2], firstPoints[0][3], firstPoints[1][3]);
 
   for (int k = 0; k < numPoints; k++) {
-    printf("%i\n", k);
+    //printf("%i\n", k);
     int i = 1;
     notDone = true;
 
@@ -125,17 +160,17 @@ struct Fragment** mainVoronoi(){
       endPoint[1] = stackY[1][k];
 
       for (int j = 1; j < stackX[0][k]; j++) {
-        //printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
+        ////printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
         if((endPoint[0] == pointsOnHull[0][i][k]  && endPoint[1] == pointsOnHull[1][i][k]) ||
         (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[1][k])) ){
-          printf("%i %i %i\n", stackX[j][k], stackY[j][k], k);
-          printf("EndPoint: %i %i %i\n\n", endPoint[0], endPoint[1], k);
+          //printf("%i %i %i\n", stackX[j][k], stackY[j][k], k);
+          //printf("EndPoint: %i %i %i\n\n", endPoint[0], endPoint[1], k);
           endPoint[0] = stackX[j][k];
           endPoint[1] = stackY[j][k];
         }
       }
 
-      //printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
+      ////printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
 
       i = i + 1;
       pointsOnHull[0][i][k] = endPoint[0];
@@ -144,7 +179,7 @@ struct Fragment** mainVoronoi(){
       if(endPoint[0] == firstPoints[0][k] && endPoint[1] ==  firstPoints[1][k]){
         pointsOnHull[0][0][k] = i+1;
         notDone = false;
-        printf("%s \n", "Done-------------------------------------------------");
+        //printf("%s \n", "Done-------------------------------------------------");
       }
     }
   }
@@ -154,7 +189,7 @@ struct Fragment** mainVoronoi(){
     fragments[k] = malloc(sizeof(struct Fragment));
     fragments[k]->numVertices = (int)pointsOnHull[0][0][k];
     fragments[k]->numFragments = numPoints;
-    printf("%i \n", fragments[k]->numVertices );
+    //printf("%i \n", fragments[k]->numVertices );
     GLfloat ((*tempVertices))[] = malloc(sizeof(GLfloat)*pointsOnHull[0][0][k]*3);
     (*tempVertices)[0] = (GLfloat)pointsX[k]/50.0f-1;
     (*tempVertices)[1] = (GLfloat)pointsY[k]/50.0f-1;
@@ -195,14 +230,14 @@ struct Fragment** mainVoronoi(){
   }
 
   //testFragments(fragments);
-    return &fragments;
+  return &fragments;
 }
 
 void testFragments(struct Fragment* fragments[], int k){
   struct Fragment* curFrag = fragments[k];
-  //printf("%i \n",curFrag->numVertices);
+  ////printf("%i \n",curFrag->numVertices);
   for (int i = 0; i < curFrag->numVertices; i++) {
-    //printf("%f \n",(*(curFrag->vertices))[i*3 +0]);
+    ////printf("%f \n",(*(curFrag->vertices))[i*3 +0]);
     printf("Vertices: %f : %f : %f \n",(*(curFrag->vertices))[i*3 +0],(*(curFrag->vertices))[i*3 +1],(*(curFrag->vertices))[i*3 +2]);
 
   }
@@ -237,13 +272,13 @@ GLfloat shatterObj(struct Fragment* fragments[],mat4 viewMatrix,GLfloat timeScal
       vec3 dir = VectorSub(curCenter,origCenter);
 
       dir = ScalarMult(dir,timeScale);
-      //printf("%f ",dir.y);
+      ////printf("%f ",dir.y);
       mat4 trans2 = Mult(T(dir.x,dir.y,dir.z),trans);
 
       glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
 
       DrawModel(squareModel,objectProgram,"inPosition",NULL,NULL);
-  }
+    }
 
-  return timeScale;
-}
+    return timeScale;
+  }
