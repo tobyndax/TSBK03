@@ -418,6 +418,8 @@ void init(void){
 
 
   int main(int argc, char **argv){
+    allocTest();
+    printf("after alloc");
     fragments  = mainVoronoi();
     testFragments(fragments,1);
 

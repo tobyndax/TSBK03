@@ -8,6 +8,24 @@
 #include "mac/MicroGlut.h"
 #include <ApplicationServices/ApplicationServices.h>
 #endif
+void allocate2D(double **dat, int nrows, int ncols) {
+  int i;
+  /*  allocate array of pointers  */
+  dat = malloc( nrows*sizeof( double* ) );
+
+  /*  allocate each row  */
+
+  for(i = 0; i < nrows; i++) {
+    dat[i] = malloc( ncols*sizeof( double ) );
+  }
+  if(dat==NULL || dat[i-1]==NULL) {
+    printf("\nError allocating memory\n");
+    exit(1);
+  }
+
+}
+
+
 // The following functions are from http://www.mas.ncl.ac.uk/~ndjw1/teaching/sim/transf/norm.c
 float surand()
 {
@@ -62,10 +80,82 @@ bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double fir
 
 }
 
+void allocTest(){
+  int numPoints = 25;
+  int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
+  int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
+
+  int xSize = 100;
+  int ySize = 100;
+
+  // int dim1, dim2, dim3;
+  // int i,j;
+  // dim1 =xSize;
+  // dim2 = ySize;
+  // dim3 = numPoints;
+  // int *** bin = (int ***)calloc(dim1*sizeof(int**),0);
+  //
+  // for (i = 0; i< dim1; i++) {
+  //
+  //   bin[i] = (int **) calloc(dim2*sizeof(int *),0);
+  //
+  //   for (j = 0; j < dim2; j++) {
+  //
+  //     bin[i][j] = (int *)calloc(dim3*sizeof(int),0);
+  //   }
+  //
+  // }
+
+  double (*pointsOnHullX)[xSize*ySize] = malloc(sizeof(double[xSize*ySize][numPoints]));
+  double (*pointsOnHullY)[xSize*ySize] = malloc(sizeof(double[xSize*ySize][numPoints]));
+  double (*stackX)[xSize*ySize] = malloc(sizeof(double)*xSize*ySize*numPoints));
+  double (*stackY)[xSize*ySize] = malloc(sizeof(double)*xSize*ySize*numPoints));
+
+  stackX[0][0] = 1;
+
+
+  for (int k = 0; k < numPoints; k++) {
+    for (int i = 0; i < numPoints; i++) {
+      for (int j = 0; j < numPoints; j++) {
+        stackX[i*j][k] = i+j;
+      }
+    }
+  }
+}
+
 struct Fragment** mainVoronoi(){
   int numPoints = 75;
   int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
   int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
+
+  int xSize = 100;
+  int ySize = 100;
+
+  int dim1, dim2, dim3;
+  int i,j,k;
+  dim1 =xSize;
+  dim2 = ySize;
+  dim3 = numPoints;
+  int *** bin = (int ***)calloc(dim1*sizeof(int**),0);
+
+  for (i = 0; i< dim1; i++) {
+
+    bin[i] = (int **) calloc(dim2*sizeof(int *),0);
+
+    for (j = 0; j < dim2; j++) {
+
+      bin[i][j] = (int *)calloc(dim3*sizeof(int),0);
+    }
+
+  }
+
+  int (*pointsOnHullX)[xSize*ySize] = calloc(sizeof(int[xSize*ySize][numPoints]),0);
+  int (*pointsOnHullY)[xSize*ySize] = calloc(sizeof(int[xSize*ySize][numPoints]),0);
+  int (*stackX)[xSize*ySize] = calloc(sizeof(int[xSize*ySize][numPoints]),0);
+  int (*stackY)[xSize*ySize] = calloc(sizeof(int[xSize*ySize][numPoints]),0);
+
+  stackX[0][0] = 1;
+
   GLfloat t;
   GLfloat conc = 5;
   for (int i = 0; i < numPoints; i++) {
@@ -81,9 +171,6 @@ struct Fragment** mainVoronoi(){
     pointsY[i] = t;
   }
 
-  int xSize = 100;
-  int ySize = 100;
-  int bin[xSize][ySize][numPoints];
 
   //printf("Distance \n");
   int lastK  = 0;
@@ -104,9 +191,9 @@ struct Fragment** mainVoronoi(){
   }
 
   int firstPoints[2][numPoints];
-  int pointsOnHull[2][1000][numPoints];
-  int stackX[xSize*ySize][numPoints];
-  int stackY[xSize*ySize][numPoints];
+
+
+
   int stack = 0;
   bool firstPoint = true;
 
@@ -149,8 +236,8 @@ struct Fragment** mainVoronoi(){
     int i = 1;
     notDone = true;
 
-    pointsOnHull[0][1][k] = firstPoints[0][k];
-    pointsOnHull[1][1][k] = firstPoints[1][k];
+    pointsOnHullX[1][k] = firstPoints[0][k];
+    pointsOnHullY[1][k] = firstPoints[1][k];
 
 
 
@@ -161,8 +248,8 @@ struct Fragment** mainVoronoi(){
 
       for (int j = 1; j < stackX[0][k]; j++) {
         ////printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
-        if((endPoint[0] == pointsOnHull[0][i][k]  && endPoint[1] == pointsOnHull[1][i][k]) ||
-        (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[1][k])) ){
+        if((endPoint[0] == pointsOnHullX[i][k]  && endPoint[1] == pointsOnHullY[i][k]) ||
+        (leftOf(pointsOnHullX[i][k],pointsOnHullY[i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[1][k])) ){
           //printf("%i %i %i\n", stackX[j][k], stackY[j][k], k);
           //printf("EndPoint: %i %i %i\n\n", endPoint[0], endPoint[1], k);
           endPoint[0] = stackX[j][k];
@@ -173,11 +260,11 @@ struct Fragment** mainVoronoi(){
       ////printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
 
       i = i + 1;
-      pointsOnHull[0][i][k] = endPoint[0];
-      pointsOnHull[1][i][k] = endPoint[1];
+      pointsOnHullX[i][k] = endPoint[0];
+      pointsOnHullY[i][k] = endPoint[1];
 
       if(endPoint[0] == firstPoints[0][k] && endPoint[1] ==  firstPoints[1][k]){
-        pointsOnHull[0][0][k] = i+1;
+        pointsOnHullX[0][k] = i+1;
         notDone = false;
         //printf("%s \n", "Done-------------------------------------------------");
       }
@@ -187,37 +274,37 @@ struct Fragment** mainVoronoi(){
   struct Fragment* fragments[numPoints];
   for (int k = 0; k < numPoints; k++) {
     fragments[k] = malloc(sizeof(struct Fragment));
-    fragments[k]->numVertices = (int)pointsOnHull[0][0][k];
+    fragments[k]->numVertices = (int)pointsOnHullX[0][k];
     fragments[k]->numFragments = numPoints;
     //printf("%i \n", fragments[k]->numVertices );
-    GLfloat ((*tempVertices))[] = malloc(sizeof(GLfloat)*pointsOnHull[0][0][k]*3);
+    GLfloat ((*tempVertices))[] = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*3);
     (*tempVertices)[0] = (GLfloat)pointsX[k]/50.0f-1;
     (*tempVertices)[1] = (GLfloat)pointsY[k]/50.0f-1;
     (*tempVertices)[2] = 0;
 
-    GLuint (*tempIndices)[] = malloc(sizeof(GLuint)*(pointsOnHull[0][0][k] -1)*3);
+    GLuint (*tempIndices)[] = malloc(sizeof(GLuint)*(pointsOnHullX[0][k] -1)*3);
     //(*tempIndices)[0] = 0;
     //(*tempIndices)[1] = 1;
     //(*tempIndices)[2] = 2;
 
-    GLuint (*tempTexCoord)[] = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*2);
+    GLuint (*tempTexCoord)[] = malloc(sizeof(GLuint)*pointsOnHullX[0][k]*2);
     (*tempTexCoord)[0] = (GLfloat)pointsX[k]/100.0f;
     (*tempTexCoord)[1] = (GLfloat)pointsY[k]/100.0f;
 
-    for (int i = 1; i < pointsOnHull[0][0][k]; i++) {
-      (*tempVertices)[i*3] = (GLfloat)pointsOnHull[0][i][k]/50.0f-1;
-      (*tempVertices)[i*3+1] = (GLfloat)pointsOnHull[1][i][k]/50.0f-1;
+    for (int i = 1; i < pointsOnHullX[0][k]; i++) {
+      (*tempVertices)[i*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
+      (*tempVertices)[i*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
       (*tempVertices)[i*3+2] = 0;
 
       (*tempIndices)[(i-1)*3] = 0;
       (*tempIndices)[(i-1)*3+1] = i;
       (*tempIndices)[(i-1)*3+2] = i+1;
 
-      (*tempTexCoord)[i*2] = (GLfloat)pointsOnHull[0][i][k]/100.0f;
-      (*tempTexCoord)[i*2+1] = (GLfloat)pointsOnHull[0][i][k]/100.0f;
+      (*tempTexCoord)[i*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
+      (*tempTexCoord)[i*2+1] = (GLfloat)pointsOnHullX[i][k]/100.0f;
     }
 
-    for (int i = 0; i < pointsOnHull[0][0][k]-2; i++) {
+    for (int i = 0; i < pointsOnHullX[0][k]-2; i++) {
 
       (*tempIndices)[(i)*3] = 0;
       (*tempIndices)[(i)*3+1] = i+1;
