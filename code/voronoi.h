@@ -8,7 +8,7 @@ void testFragments(struct Fragment* fragments[],int k);
 struct Fragment{
   int numVertices;
   GLfloat (*vertices)[];
-  GLfloat (*textCoord)[];
+  GLfloat (*texCoord)[];
   GLuint (*indicies)[];
 };
 

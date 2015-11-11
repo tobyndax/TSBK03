@@ -190,7 +190,7 @@ struct Fragment** mainVoronoi(){
 
     fragments[k]->vertices = tempVertices;
     fragments[k]->indicies = tempIndices;
-    fragments[k]->textCoord = tempTexCoord;
+    fragments[k]->texCoord = tempTexCoord;
   }
 
   //testFragments(fragments);
