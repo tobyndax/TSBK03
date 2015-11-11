@@ -3,6 +3,20 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#ifdef __APPLE__
+#include <OpenGL/gl3.h>
+#include "mac/MicroGlut.h"
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+#include "GL_utilities.h"
+
+struct Fragment{
+  int numVertices;
+  GLfloat (*vertices)[];
+  GLfloat (*textCoord)[];
+  GLuint (*indicies)[];
+};
+
 bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double firstY){
 
   double tmp = (Bx-Ax)*(My-Ay) -
@@ -27,9 +41,9 @@ bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double fir
 }
 
 void mainVoronoi(){
-  int numPoints = 4;
-  int pointsX[] = {25,75,25,75};
-  int pointsY[] = {25,25,75,75};
+  int numPoints = 5;
+  int pointsX[] = {25,75,25,75,55};
+  int pointsY[] = {25,25,75,75,30};
   int xSize = 100;
   int ySize = 100;
   int bin[xSize][ySize][numPoints];
@@ -48,14 +62,14 @@ void mainVoronoi(){
           bin[i][j][k] = 1;
 
 
-        if(i==99 && j==43){
+          if(i==99 && j==43){
             printf("bin[lastK]: %i \n",bin[i][j][lastK]);
             printf("lastK: %i \n",lastK);
             printf("bin[k]: %i \n",bin[i][j][k]);
             printf("k: %i \n\n",k);
             int apa=1;
-        }
-        lastK = k;
+          }
+          lastK = k;
         }
       }
     }
@@ -118,7 +132,7 @@ void mainVoronoi(){
       endPoint[1] = stackY[1][k];
 
       for (int j = 1; j < stackX[0][k]; j++) {
-      //printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
+        //printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
         if((endPoint[0] == pointsOnHull[0][i][k]  && endPoint[1] == pointsOnHull[1][i][k]) ||
         (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[1][k])) ){
           printf("%i %i %i\n", stackX[j][k], stackY[j][k], k);
@@ -142,10 +156,38 @@ void mainVoronoi(){
     }
   }
 
-for (int k = 0; k < numPoints; k++) {
-  for (int i = 1; i < pointsOnHull[0][0][k]; i++) {
-    printf("%i : %i \n", pointsOnHull[0][i][k] , pointsOnHull[1][i][k]);
+  struct Fragment* fragments[numPoints];
+  for (int k = 0; k < numPoints; k++) {
+    fragments[k] = malloc(sizeof(struct Fragment));
+    fragments[k]->numVertices = pointsOnHull[0][0][k];
+    GLfloat (*tempVertices) = malloc(sizeof(GLfloat)*pointsOnHull[0][0][k]*3);
+    *tempVertices[0] = pointsX[k]/50-1;
+    *tempVertices[1] = pointsY[k]/50-1;
+    *tempVertices[2] = 0;
+
+    GLuint (*tempIndices) = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*3);
+    *tempIndices[0] = 0;
+    *tempIndices[1] = 1;
+    *tempIndices[2] = 2;
+
+    GLuint* tempTextCoord = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*2);
+    *tempTextCoord[0] = pointsX[k]/100;
+    *tempTextCoord[1] = pointsY[k]/100;
+
+    for (int i = 1; i < pointsOnHull[0][0][k]; i++) {
+      *tempVertices[i*3] = pointsOnHull[0][i][k]/50-1;
+      *tempVertices[i*3+1] = pointsOnHull[1][i][k]/50-1;
+      *tempVertices[i*3+2] = 0;
+
+      *tempIndices[i*3] = 0;
+      *tempIndices[i*3+1] = i+1;
+      *tempIndices[i*3+2] = i+2;
+
+      *tempTextCoord[i*2] = pointsOnHull[0][i][k]/100;
+      *tempTextCoord[i*2+1] = pointsOnHull[0][i][k]/100;
+    }
+    fragments[k]->vertices = tempVertices;
+    fragments[k]->indicies = tempIndices;
+    fragments[k]->textCoord = tempTextCoord;
   }
-  printf("k:%i done \n\n",k);
-}
 }
