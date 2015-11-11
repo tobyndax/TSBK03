@@ -160,34 +160,34 @@ void mainVoronoi(){
   for (int k = 0; k < numPoints; k++) {
     fragments[k] = malloc(sizeof(struct Fragment));
     fragments[k]->numVertices = pointsOnHull[0][0][k];
-    GLfloat (*tempVertices) = malloc(sizeof(GLfloat)*pointsOnHull[0][0][k]*3);
-    *tempVertices[0] = pointsX[k]/50-1;
-    *tempVertices[1] = pointsY[k]/50-1;
-    *tempVertices[2] = 0;
+    GLfloat ((*tempVertices))[] = malloc(sizeof(GLfloat)*pointsOnHull[0][0][k]*3);
+    ((*tempVertices))[0] = pointsX[k]/50-1;
+    ((*tempVertices))[1] = pointsY[k]/50-1;
+    ((*tempVertices))[2] = 0;
 
-    GLuint (*tempIndices) = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*3);
-    *tempIndices[0] = 0;
-    *tempIndices[1] = 1;
-    *tempIndices[2] = 2;
+    GLuint (*tempIndices)[] = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*3);
+    (*tempIndices)[0] = 0;
+    (*tempIndices)[1] = 1;
+    (*tempIndices)[2] = 2;
 
-    GLuint* tempTextCoord = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*2);
-    *tempTextCoord[0] = pointsX[k]/100;
-    *tempTextCoord[1] = pointsY[k]/100;
+    GLuint (*tempTexCoord)[] = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*2);
+    (*tempTexCoord)[0] = pointsX[k]/100;
+    (*tempTexCoord)[1] = pointsY[k]/100;
 
     for (int i = 1; i < pointsOnHull[0][0][k]; i++) {
-      *tempVertices[i*3] = pointsOnHull[0][i][k]/50-1;
-      *tempVertices[i*3+1] = pointsOnHull[1][i][k]/50-1;
-      *tempVertices[i*3+2] = 0;
+      (*tempVertices)[i*3] = pointsOnHull[0][i][k]/50-1;
+      (*tempVertices)[i*3+1] = pointsOnHull[1][i][k]/50-1;
+      (*tempVertices)[i*3+2] = 0;
 
-      *tempIndices[i*3] = 0;
-      *tempIndices[i*3+1] = i+1;
-      *tempIndices[i*3+2] = i+2;
+      (*tempIndices)[i*3] = 0;
+      (*tempIndices)[i*3+1] = i+1;
+      (*tempIndices)[i*3+2] = i+2;
 
-      *tempTextCoord[i*2] = pointsOnHull[0][i][k]/100;
-      *tempTextCoord[i*2+1] = pointsOnHull[0][i][k]/100;
+      (*tempTexCoord)[i*2] = pointsOnHull[0][i][k]/100;
+      (*tempTexCoord)[i*2+1] = pointsOnHull[0][i][k]/100;
     }
     fragments[k]->vertices = tempVertices;
     fragments[k]->indicies = tempIndices;
-    fragments[k]->textCoord = tempTextCoord;
+    fragments[k]->textCoord = tempTexCoord;
   }
 }
