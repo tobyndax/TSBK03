@@ -15,6 +15,8 @@
 #include "voronoi.h"
 
 bool shatter = false;
+struct Fragment** fragments;
+GLfloat timeScale = 0.0f;
 
 void initSky(){
 
@@ -356,15 +358,7 @@ void init(void){
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
     displayObjects(viewMatrix);
 
-    glUseProgram(objectProgram);
-
-    mat4 trans = T(100.0f,2.0f,90.0f);
-
-    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans.m);
-    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
-
-    DrawModel(squareModel,objectProgram,"inPosition",NULL,NULL);
-
+    timeScale = shatterObj(fragments,viewMatrix,timeScale);
 
     glutSwapBuffers();
   }
@@ -420,20 +414,12 @@ void init(void){
     //printf("%d %d\n", deltax ,deltay);
   }
 
-  void shatterObj(struct Fragment* fragments[],int k){
 
-    struct Fragment* curFrag = fragments[k];
-    squareModel = LoadDataToModel(
-      *(curFrag->vertices), NULL, *(curFrag->texCoord), NULL,
-      *(curFrag->indicies), 6, 12);
-  }
 
 
   int main(int argc, char **argv){
-    struct Fragment** fragments  = mainVoronoi();
+    fragments  = mainVoronoi();
     testFragments(fragments,1);
-    //return 0;
-
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
@@ -444,8 +430,7 @@ void init(void){
     #ifdef __APPLE__
     glutFullScreen();
     #endif
-    init ();
-    shatterObj(fragments,1);
+    init();
     initKeymapManager();
 
 

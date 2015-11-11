@@ -34,9 +34,9 @@ bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double fir
 }
 
 struct Fragment** mainVoronoi(){
-  int numPoints = 4;
-  int pointsX[] = {25,75,25,75};
-  int pointsY[] = {25,25,75,75};
+  int numPoints = 5;
+  int pointsX[] = {25,75,25,75,55};
+  int pointsY[] = {25,25,75,75,30};
   int xSize = 100;
   int ySize = 100;
   int bin[xSize][ySize][numPoints];
@@ -48,7 +48,7 @@ struct Fragment** mainVoronoi(){
       int minDist = 8000000;
       for (int k = 0; k < numPoints; k++) {
         bin[i][j][k] = 0;
-        int tmpDist = pow((pointsX[k] - i),2) + pow((pointsY[k]-j),2);
+        int tmpDist = pow((pointsX[k] - i),2) + pow((GLfloat)(pointsY[k]-j)/3.0f,2);
         if(tmpDist < minDist){
           minDist = tmpDist;
           bin[i][j][lastK] = 0;
@@ -153,6 +153,7 @@ struct Fragment** mainVoronoi(){
   for (int k = 0; k < numPoints; k++) {
     fragments[k] = malloc(sizeof(struct Fragment));
     fragments[k]->numVertices = (int)pointsOnHull[0][0][k];
+    fragments[k]->numFragments = numPoints;
     printf("%i \n", fragments[k]->numVertices );
     GLfloat ((*tempVertices))[] = malloc(sizeof(GLfloat)*pointsOnHull[0][0][k]*3);
     (*tempVertices)[0] = (GLfloat)pointsX[k]/50.0f-1;
@@ -209,4 +210,40 @@ void testFragments(struct Fragment* fragments[], int k){
     printf("Indices %i : %i : %i \n",(*(curFrag->indicies))[i*3 +0],(*(curFrag->indicies))[i*3 +1],(*(curFrag->indicies))[i*3 +2]);
   }
 
+}
+
+
+
+
+GLfloat shatterObj(struct Fragment* fragments[],mat4 viewMatrix,GLfloat timeScale){
+  vec3 origCenter = {0,0,0};
+
+  timeScale += 0.001f;
+  glUseProgram(objectProgram);
+
+  mat4 trans = T(100.0f,2.0f,90.0f);
+
+  glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans.m);
+  glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
+
+  for (int k = 0; k < fragments[0]->numFragments; k++) {
+    GLint verts = fragments[k]->numVertices;
+    struct Fragment* curFrag = fragments[k];
+    squareModel = LoadDataToModel(
+      *(curFrag->vertices), NULL, *(curFrag->texCoord), NULL,
+      *(curFrag->indicies),verts, (verts-2)*3);
+      vec3 curCenter = {(*(curFrag->vertices))[0],(*(curFrag->vertices))[1],(*(curFrag->vertices))[2]};
+
+      vec3 dir = VectorSub(curCenter,origCenter);
+
+      dir = ScalarMult(dir,timeScale);
+      //printf("%f ",dir.y);
+      mat4 trans2 = Mult(T(dir.x,dir.y,dir.z),trans);
+
+      glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+
+      DrawModel(squareModel,objectProgram,"inPosition",NULL,NULL);
+  }
+
+  return timeScale;
 }

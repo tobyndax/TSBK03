@@ -3,6 +3,7 @@
 
 
 Model *tm, *skybox;
+
 // Reference to shader program
 GLuint program, skyProgram, objectProgram;
 GLuint tex1, skyTex, waterTex, snowTex, dirtTex;

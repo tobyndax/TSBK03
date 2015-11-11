@@ -20,6 +20,7 @@ extern GLuint tex1, skyTex, waterTex, treeTex, snowTex, dirtTex,leafTex,
 crossTex,GodzillaTex,GlowGodzillaTex,FemutoTex,HokmutoTex;
 extern TextureData ttex; // terrain
 
+
 extern vec3 viewPoint;
 extern vec3 camPosition;
 extern vec3 upVector;
