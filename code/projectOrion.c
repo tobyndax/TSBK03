@@ -420,7 +420,8 @@ void init(void){
   }
 
   int main(int argc, char **argv){
-    mainVoronoi();
+    struct Fragment** fragments  = mainVoronoi();
+    testFragments(fragments,1);
     return 0;
 
     glutInit(&argc, argv);

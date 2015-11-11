@@ -8,14 +8,7 @@
 #include "mac/MicroGlut.h"
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#include "GL_utilities.h"
 
-struct Fragment{
-  int numVertices;
-  GLfloat (*vertices)[];
-  GLfloat (*textCoord)[];
-  GLuint (*indicies)[];
-};
 
 bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double firstY){
 
@@ -40,7 +33,7 @@ bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double fir
 
 }
 
-void mainVoronoi(){
+struct Fragment** mainVoronoi(){
   int numPoints = 4;
   int pointsX[] = {25,75,25,75};
   int pointsY[] = {25,25,75,75};
@@ -200,12 +193,12 @@ void mainVoronoi(){
     fragments[k]->textCoord = tempTexCoord;
   }
 
-  testFragments(fragments);
-
+  //testFragments(fragments);
+    return &fragments;
 }
 
-void testFragments(struct Fragment* fragments[]){
-  struct Fragment* curFrag = fragments[3];
+void testFragments(struct Fragment* fragments[], int k){
+  struct Fragment* curFrag = fragments[k];
   //printf("%i \n",curFrag->numVertices);
   for (int i = 0; i < curFrag->numVertices; i++) {
     //printf("%f \n",(*(curFrag->vertices))[i*3 +0]);
