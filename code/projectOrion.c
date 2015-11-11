@@ -109,10 +109,10 @@ void init(void){
   printError("Init sky + terrain");
   //Move initially just to set everything up properly!
 
-
-  /*squareModel = LoadDataToModel(
+  /*
+  squareModel = LoadDataToModel(
     square, NULL, squareTexCoord, NULL,
-    squareIndices, 4, 6);
+    squareIndices, 6, 12);
 */
 
 
@@ -363,7 +363,6 @@ void init(void){
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans.m);
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-    printf("%i %i %i\n", squareModel->indexArray[9],squareModel->indexArray[10],squareModel->indexArray[11]);
     DrawModel(squareModel,objectProgram,"inPosition",NULL,NULL);
 
 
@@ -433,7 +432,8 @@ void init(void){
   int main(int argc, char **argv){
     struct Fragment** fragments  = mainVoronoi();
     testFragments(fragments,1);
-    shatterObj(fragments,1);
+    //return 0;
+
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
@@ -445,6 +445,7 @@ void init(void){
     glutFullScreen();
     #endif
     init ();
+    shatterObj(fragments,1);
     initKeymapManager();
 
 
