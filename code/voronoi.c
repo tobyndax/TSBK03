@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-bool leftOf(double Ax ,double Ay,double Bx,double By,double Mx,double My,double firstX, double firstY){
+bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double firstY){
+
   double tmp = (Bx-Ax)*(My-Ay) -
   (By-Ay)*(Mx-Ax);
 
@@ -14,8 +15,8 @@ bool leftOf(double Ax ,double Ay,double Bx,double By,double Mx,double My,double 
     if(firstX == Mx && firstY == My)
     return true;
 
-    double dist1 = pow((Ax -Bx),2) - pow((Ay -By),2);
-    double dist2 = pow((Ax -Mx),2) - pow((Ay -My),2);
+    double dist1 = pow((Ax -Bx),2) + pow((Ay -By),2);
+    double dist2 = pow((Ax -Mx),2) + pow((Ay -My),2);
 
     if(dist2 > dist1){
       return true;
@@ -39,12 +40,22 @@ void mainVoronoi(){
     for (int j = 0; j < ySize; j++) {
       int minDist = 8000000;
       for (int k = 0; k < numPoints; k++) {
+        bin[i][j][k] = 0;
         int tmpDist = pow((pointsX[k] - i),2) + pow((pointsY[k]-j),2);
         if(tmpDist < minDist){
           minDist = tmpDist;
           bin[i][j][lastK] = 0;
           bin[i][j][k] = 1;
-          lastK = k;
+
+
+        if(i==99 && j==43){
+            printf("bin[lastK]: %i \n",bin[i][j][lastK]);
+            printf("lastK: %i \n",lastK);
+            printf("bin[k]: %i \n",bin[i][j][k]);
+            printf("k: %i \n\n",k);
+            int apa=1;
+        }
+        lastK = k;
         }
       }
     }
@@ -107,28 +118,34 @@ void mainVoronoi(){
       endPoint[1] = stackY[1][k];
 
       for (int j = 1; j < stackX[0][k]; j++) {
+      //printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
         if((endPoint[0] == pointsOnHull[0][i][k]  && endPoint[1] == pointsOnHull[1][i][k]) ||
         (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[1][k])) ){
+          printf("%i %i %i\n", stackX[j][k], stackY[j][k], k);
+          printf("EndPoint: %i %i %i\n\n", endPoint[0], endPoint[1], k);
           endPoint[0] = stackX[j][k];
           endPoint[1] = stackY[j][k];
         }
       }
 
-      printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
+      //printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
 
       i = i + 1;
       pointsOnHull[0][i][k] = endPoint[0];
       pointsOnHull[1][i][k] = endPoint[1];
 
       if(endPoint[0] == firstPoints[0][k] && endPoint[1] ==  firstPoints[1][k]){
-        pointsOnHull[0][0][k] = i;
+        pointsOnHull[0][0][k] = i+1;
         notDone = false;
         printf("%s \n", "Done-------------------------------------------------");
       }
     }
   }
 
-  for (int i = 1; i < pointsOnHull[0][0][0]; i++) {
-    printf("%i : %i \n", pointsOnHull[0][i][0] , pointsOnHull[1][i][0]);
+for (int k = 0; k < numPoints; k++) {
+  for (int i = 1; i < pointsOnHull[0][0][k]; i++) {
+    printf("%i : %i \n", pointsOnHull[0][i][k] , pointsOnHull[1][i][k]);
   }
+  printf("k:%i done \n\n",k);
+}
 }
