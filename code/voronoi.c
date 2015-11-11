@@ -187,6 +187,14 @@ void mainVoronoi(){
       (*tempTexCoord)[i*2] = (GLfloat)pointsOnHull[0][i][k]/100.0f;
       (*tempTexCoord)[i*2+1] = (GLfloat)pointsOnHull[0][i][k]/100.0f;
     }
+
+    for (int i = 0; i < pointsOnHull[0][0][k]-2; i++) {
+
+      (*tempIndices)[(i)*3] = 0;
+      (*tempIndices)[(i)*3+1] = i+1;
+      (*tempIndices)[(i)*3+2] = i+2;
+    }
+
     fragments[k]->vertices = tempVertices;
     fragments[k]->indicies = tempIndices;
     fragments[k]->textCoord = tempTexCoord;
@@ -197,11 +205,14 @@ void mainVoronoi(){
 }
 
 void testFragments(struct Fragment* fragments[]){
-  struct Fragment* curFrag = fragments[0];
+  struct Fragment* curFrag = fragments[3];
   //printf("%i \n",curFrag->numVertices);
   for (int i = 0; i < curFrag->numVertices; i++) {
     //printf("%f \n",(*(curFrag->vertices))[i*3 +0]);
     printf("Vertices: %f : %f : %f \n",(*(curFrag->vertices))[i*3 +0],(*(curFrag->vertices))[i*3 +1],(*(curFrag->vertices))[i*3 +2]);
+
+  }
+  for (int i = 0; i < curFrag->numVertices-2; i++) {
     printf("Indices %i : %i : %i \n",(*(curFrag->indicies))[i*3 +0],(*(curFrag->indicies))[i*3 +1],(*(curFrag->indicies))[i*3 +2]);
   }
 
