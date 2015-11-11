@@ -99,15 +99,16 @@ void mainVoronoi(){
     pointsOnHull[0][1][k] = firstPoints[0][k];
     pointsOnHull[1][1][k] = firstPoints[1][k];
 
-    endPoint[0] = stackX[1][k];
-    endPoint[1] = stackY[1][k];
+
 
     while(notDone){
 
+      endPoint[0] = stackX[1][k];
+      endPoint[1] = stackY[1][k];
 
       for (int j = 1; j < stackX[0][k]; j++) {
         if((endPoint[0] == pointsOnHull[0][i][k]  && endPoint[1] == pointsOnHull[1][i][k]) ||
-        (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[0][k])) ){
+        (leftOf(pointsOnHull[0][i][k],pointsOnHull[1][i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[1][k])) ){
           endPoint[0] = stackX[j][k];
           endPoint[1] = stackY[j][k];
         }
@@ -115,12 +116,12 @@ void mainVoronoi(){
 
       printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
 
-      i += 1;
+      i = i + 1;
       pointsOnHull[0][i][k] = endPoint[0];
       pointsOnHull[1][i][k] = endPoint[1];
 
       if(endPoint[0] == firstPoints[0][k] && endPoint[1] ==  firstPoints[1][k]){
-        pointsOnHull[0][0][k] = i+1;
+        pointsOnHull[0][0][k] = i;
         notDone = false;
         printf("%s \n", "Done-------------------------------------------------");
       }
