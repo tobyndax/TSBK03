@@ -41,9 +41,9 @@ bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double fir
 }
 
 void mainVoronoi(){
-  int numPoints = 5;
-  int pointsX[] = {25,75,25,75,55};
-  int pointsY[] = {25,25,75,75,30};
+  int numPoints = 4;
+  int pointsX[] = {25,75,25,75};
+  int pointsY[] = {25,25,75,75};
   int xSize = 100;
   int ySize = 100;
   int bin[xSize][ySize][numPoints];
@@ -159,35 +159,50 @@ void mainVoronoi(){
   struct Fragment* fragments[numPoints];
   for (int k = 0; k < numPoints; k++) {
     fragments[k] = malloc(sizeof(struct Fragment));
-    fragments[k]->numVertices = pointsOnHull[0][0][k];
+    fragments[k]->numVertices = (int)pointsOnHull[0][0][k];
+    printf("%i \n", fragments[k]->numVertices );
     GLfloat ((*tempVertices))[] = malloc(sizeof(GLfloat)*pointsOnHull[0][0][k]*3);
-    ((*tempVertices))[0] = pointsX[k]/50-1;
-    ((*tempVertices))[1] = pointsY[k]/50-1;
-    ((*tempVertices))[2] = 0;
+    (*tempVertices)[0] = (GLfloat)pointsX[k]/50.0f-1;
+    (*tempVertices)[1] = (GLfloat)pointsY[k]/50.0f-1;
+    (*tempVertices)[2] = 0;
 
-    GLuint (*tempIndices)[] = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*3);
-    (*tempIndices)[0] = 0;
-    (*tempIndices)[1] = 1;
-    (*tempIndices)[2] = 2;
+    GLuint (*tempIndices)[] = malloc(sizeof(GLuint)*(pointsOnHull[0][0][k] -1)*3);
+    //(*tempIndices)[0] = 0;
+    //(*tempIndices)[1] = 1;
+    //(*tempIndices)[2] = 2;
 
     GLuint (*tempTexCoord)[] = malloc(sizeof(GLuint)*pointsOnHull[0][0][k]*2);
-    (*tempTexCoord)[0] = pointsX[k]/100;
-    (*tempTexCoord)[1] = pointsY[k]/100;
+    (*tempTexCoord)[0] = (GLfloat)pointsX[k]/100.0f;
+    (*tempTexCoord)[1] = (GLfloat)pointsY[k]/100.0f;
 
     for (int i = 1; i < pointsOnHull[0][0][k]; i++) {
-      (*tempVertices)[i*3] = pointsOnHull[0][i][k]/50-1;
-      (*tempVertices)[i*3+1] = pointsOnHull[1][i][k]/50-1;
+      (*tempVertices)[i*3] = (GLfloat)pointsOnHull[0][i][k]/50.0f-1;
+      (*tempVertices)[i*3+1] = (GLfloat)pointsOnHull[1][i][k]/50.0f-1;
       (*tempVertices)[i*3+2] = 0;
 
-      (*tempIndices)[i*3] = 0;
-      (*tempIndices)[i*3+1] = i+1;
-      (*tempIndices)[i*3+2] = i+2;
+      (*tempIndices)[(i-1)*3] = 0;
+      (*tempIndices)[(i-1)*3+1] = i;
+      (*tempIndices)[(i-1)*3+2] = i+1;
 
-      (*tempTexCoord)[i*2] = pointsOnHull[0][i][k]/100;
-      (*tempTexCoord)[i*2+1] = pointsOnHull[0][i][k]/100;
+      (*tempTexCoord)[i*2] = (GLfloat)pointsOnHull[0][i][k]/100.0f;
+      (*tempTexCoord)[i*2+1] = (GLfloat)pointsOnHull[0][i][k]/100.0f;
     }
     fragments[k]->vertices = tempVertices;
     fragments[k]->indicies = tempIndices;
     fragments[k]->textCoord = tempTexCoord;
   }
+
+  testFragments(fragments);
+
+}
+
+void testFragments(struct Fragment* fragments[]){
+  struct Fragment* curFrag = fragments[0];
+  //printf("%i \n",curFrag->numVertices);
+  for (int i = 0; i < curFrag->numVertices; i++) {
+    //printf("%f \n",(*(curFrag->vertices))[i*3 +0]);
+    printf("Vertices: %f : %f : %f \n",(*(curFrag->vertices))[i*3 +0],(*(curFrag->vertices))[i*3 +1],(*(curFrag->vertices))[i*3 +2]);
+    printf("Indices %i : %i : %i \n",(*(curFrag->indicies))[i*3 +0],(*(curFrag->indicies))[i*3 +1],(*(curFrag->indicies))[i*3 +2]);
+  }
+
 }

@@ -2,5 +2,6 @@
 #define VORONOI_H
 
 void mainVoronoi();
+void testFragments();
 
 #endif
