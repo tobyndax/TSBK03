@@ -12,8 +12,8 @@ void allocTest();
 
 
 struct Fragment{
-  int numFragments;
-  int numVertices;
+  GLint numFragments;
+  GLint numVertices;
   GLfloat (*vertices)[];
   GLfloat (*texCoord)[];
   GLuint (*indicies)[];
