@@ -16,6 +16,9 @@ vec3 upVector;
 int deltax = 0;
 int deltay = 0;
 
+
+struct Fragment* fragments = NULL;
+
 mat4 projectionMatrix;
 
 GLfloat square[] = {

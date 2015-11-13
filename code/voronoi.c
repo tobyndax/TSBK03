@@ -8,6 +8,14 @@
 #include "mac/MicroGlut.h"
 #include <ApplicationServices/ApplicationServices.h>
 #endif
+
+struct Fragment* fragments;
+Model** models;
+vec3* dirs;
+
+bool firstTime = true;
+
+
 void allocate2D(double **dat, int nrows, int ncols) {
   int i;
   /*  allocate array of pointers  */
@@ -100,16 +108,16 @@ int** my2DAllocation(int rows,int columns)
 
 void free_data(int ***data, size_t xlen, size_t ylen)
 {
-    size_t i, j;
+  size_t i, j;
 
-    for (i=0; i < xlen; ++i) {
-        if (data[i] != NULL) {
-            for (j=0; j < ylen; ++j)
-                free(data[i][j]);
-            free(data[i]);
-        }
+  for (i=0; i < xlen; ++i) {
+    if (data[i] != NULL) {
+      for (j=0; j < ylen; ++j)
+      free(data[i][j]);
+      free(data[i]);
     }
-    free(data);
+  }
+  free(data);
 }
 
 int ***my3DAllocation(size_t xlen, size_t ylen, size_t zlen)
@@ -152,65 +160,12 @@ int ***my3DAllocation(size_t xlen, size_t ylen, size_t zlen)
   return p;
 }
 
-void allocTest(){
-
-  static const int numPoints = 25;
-  static int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
-  static int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
-
-  static const int xSize = 100;
-  static const int ySize = 100;
-
-
-  // int dim1, dim2, dim3;
-  // int i,j;
-  // dim1 =xSize;
-  // dim2 = ySize;
-  // dim3 = numPoints;
-  // int *** bin = (int ***)calloc(dim1*sizeof(int**),0);
-  //
-  // for (i = 0; i< dim1; i++) {
-  //
-  //   bin[i] = (int **) calloc(dim2*sizeof(int *),0);
-  //
-  //   for (j = 0; j < dim2; j++) {
-  //
-  //     bin[i][j] = (int *)calloc(dim3*sizeof(int),0);
-  //   }
-  //
-  // }
-  int** pointsOnHullX = my2DAllocation(xSize*ySize,numPoints);
-  int** pointsOnHullY = my2DAllocation(xSize*ySize,numPoints);
-  int** stackX = my2DAllocation(xSize*ySize,numPoints);
-  int** stackY = my2DAllocation(xSize*ySize,numPoints);
-  int *** bin = my3DAllocation(xSize,ySize,numPoints);
-
-
-  stackX[0][0] = 1;
-
-
-  for (int k = 0; k < numPoints; k++) {
-    for (int i = 0; i < numPoints; i++) {
-      for (int j = 0; j < numPoints; j++) {
-        stackX[i*j][k] = i+j;
-      }
-    }
-  }
-}
-
-struct Fragment** mainVoronoi(){
-  int numPoints = 75;
+struct Fragment* mainVoronoi(int numPoints){
   int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
   int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
 
   int xSize = 100;
   int ySize = 100;
-
-  int dim1, dim2, dim3;
-  int i,j,k;
-  dim1 =xSize;
-  dim2 = ySize;
-  dim3 = numPoints;
 
   int** pointsOnHullX = my2DAllocation(xSize*ySize,numPoints);
   int** pointsOnHullY = my2DAllocation(xSize*ySize,numPoints);
@@ -219,13 +174,6 @@ struct Fragment** mainVoronoi(){
   int *** bin = my3DAllocation(xSize,ySize,numPoints);
 
   int** firstPoints = my2DAllocation(2,numPoints);
-
-
-
-  struct Fragment* fragments[numPoints];
-  for (size_t i = 0; i < numPoints; i++) {
-    fragments[i]= malloc(sizeof( struct Fragment));
-  }
 
 
   int stack = 0;
@@ -238,12 +186,12 @@ struct Fragment** mainVoronoi(){
   GLfloat conc = 5;
   for (int i = 0; i < numPoints; i++) {
     t = round((gennor(conc)*50)+50);
-    while(t > 99 || t < 0 ){
+    while(t > 99 || t < 0 ){
       t = round((gennor(conc)*50)+50);
     }
     pointsX[i] = t;
     t = round((gennor(conc)*50)+50);
-    while(t > 99 || t < 0 ){
+    while(t > 99 || t < 0 ){
       t = round((gennor(conc)*50)+50);
     }
     pointsY[i] = t;
@@ -293,12 +241,6 @@ struct Fragment** mainVoronoi(){
     stackY[0][k] = stack;
   }
 
-
-
-  //printf("Gift Wrapping: numPoints: %i stack: %i \n", numPoints, stackX[0][0]);
-  //printf("First points: %i : %i   %i : %i   %i : %i   %i : %i  \n", firstPoints[0][0], firstPoints[1][0], firstPoints[0][1], firstPoints[1][1]
-  //, firstPoints[0][2], firstPoints[1][2], firstPoints[0][3], firstPoints[1][3]);
-
   for (int k = 0; k < numPoints; k++) {
     //printf("%i\n", k);
     int i = 1;
@@ -339,49 +281,54 @@ struct Fragment** mainVoronoi(){
     }
   }
 
+
+  fragments = malloc(sizeof(struct Fragment)*numPoints);
   for (int k = 0; k < numPoints; k++) {
-    fragments[k] = malloc(sizeof(struct Fragment));
-    fragments[k]->numVertices = (GLint)pointsOnHullX[0][k];
-    printf("numVerts: %i \n ", fragments[k]->numVertices);
-    fragments[k]->numFragments = numPoints;
-    //printf("%i \n", fragments[k]->numVertices );
-    GLfloat ((*tempVertices))[] = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*3);
-    (*tempVertices)[0] = (GLfloat)pointsX[k]/50.0f-1;
-    (*tempVertices)[1] = (GLfloat)pointsY[k]/50.0f-1;
-    (*tempVertices)[2] = 0;
+    fragments[k].numVertices = (GLint)pointsOnHullX[0][k];
+    printf("numVerts: %i \n ", fragments[k].numVertices);
+    fragments[k].numFragments = (GLint)numPoints;
 
-    GLuint (*tempIndices)[] = malloc(sizeof(GLuint)*(pointsOnHullX[0][k] -1)*3);
-    //(*tempIndices)[0] = 0;
-    //(*tempIndices)[1] = 1;
-    //(*tempIndices)[2] = 2;
+    //Allocate the vertices
+    GLfloat *tempVertices;
+    tempVertices = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*3);
 
-    GLuint (*tempTexCoord)[] = malloc(sizeof(GLuint)*pointsOnHullX[0][k]*2);
-    (*tempTexCoord)[0] = (GLfloat)pointsX[k]/100.0f;
-    (*tempTexCoord)[1] = (GLfloat)pointsY[k]/100.0f;
+
+    tempVertices[0] = (GLfloat)pointsX[k]/50.0f-1;
+    tempVertices[1] = (GLfloat)pointsY[k]/50.0f-1;
+    tempVertices[2] = 0;
+
+    GLuint *tempIndices;
+    tempIndices = malloc(sizeof(GLuint)*(pointsOnHullX[0][k] -1)*3);
+
+    GLfloat *tempTexCoord;
+    tempTexCoord = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*2);
+
+    tempTexCoord[0] = (GLfloat)pointsX[k]/100.0f;
+    tempTexCoord[1] = (GLfloat)pointsY[k]/100.0f;
 
     for (int i = 1; i < pointsOnHullX[0][k]; i++) {
-      (*tempVertices)[i*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
-      (*tempVertices)[i*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
-      (*tempVertices)[i*3+2] = 0;
+      tempVertices[i*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
+      tempVertices[i*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
+      tempVertices[i*3+2] = 0;
 
-      (*tempIndices)[(i-1)*3] = 0;
-      (*tempIndices)[(i-1)*3+1] = i;
-      (*tempIndices)[(i-1)*3+2] = i+1;
+      tempIndices[(i-1)*3] = 0;
+      tempIndices[(i-1)*3+1] = i;
+      tempIndices[(i-1)*3+2] = i+1;
 
-      (*tempTexCoord)[i*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
-      (*tempTexCoord)[i*2+1] = (GLfloat)pointsOnHullX[i][k]/100.0f;
+      tempTexCoord[i*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
+      tempTexCoord[i*2+1] = (GLfloat)pointsOnHullX[i][k]/100.0f;
     }
 
     for (int i = 0; i < pointsOnHullX[0][k]-2; i++) {
 
-      (*tempIndices)[(i)*3] = 0;
-      (*tempIndices)[(i)*3+1] = i+1;
-      (*tempIndices)[(i)*3+2] = i+2;
+      tempIndices[(i)*3] = 0;
+      tempIndices[(i)*3+1] = i+1;
+      tempIndices[(i)*3+2] = i+2;
     }
 
-    fragments[k]->vertices = tempVertices;
-    fragments[k]->indicies = tempIndices;
-    fragments[k]->texCoord = tempTexCoord;
+    fragments[k].vertices = tempVertices;
+    fragments[k].indicies = tempIndices;
+    fragments[k].texCoord = tempTexCoord;
   }
 
   //testFragments(fragments);
@@ -392,56 +339,69 @@ struct Fragment** mainVoronoi(){
   free(bin);
   free(firstPoints);
 
-  return &fragments;
+  return fragments;
 }
 
-void testFragments(struct Fragment* fragments[], int k){
-  struct Fragment* curFrag = fragments[k];
+void testFragments(int k){
+  struct Fragment curFrag = fragments[k];
   printf("%s\n", "-------------------------------------" );
-  printf("%i \n",curFrag->numVertices);
-  for (int i = 0; i < curFrag->numVertices; i++) {
-    ////printf("%f \n",(*(curFrag->vertices))[i*3 +0]);
-    printf("Vertices: %f : %f : %f \n",(*(curFrag->vertices))[i*3 +0],(*(curFrag->vertices))[i*3 +1],(*(curFrag->vertices))[i*3 +2]);
+  printf("%i \n",curFrag.numVertices);
+  for (int i = 0; i < curFrag.numVertices; i++) {
+
+    printf("Vertices: %f : %f : %f \n",((curFrag.vertices))[i*3 +0],((curFrag.vertices))[i*3 +1],((curFrag.vertices))[i*3 +2]);
 
   }
-  for (int i = 0; i < curFrag->numVertices-2; i++) {
-    printf("Indices %i : %i : %i \n",(*(curFrag->indicies))[i*3 +0],(*(curFrag->indicies))[i*3 +1],(*(curFrag->indicies))[i*3 +2]);
+  for (int i = 0; i < curFrag.numVertices-2; i++) {
+    printf("Indices %i : %i : %i \n",((curFrag.indicies))[i*3 +0],((curFrag.indicies))[i*3 +1],((curFrag.indicies))[i*3 +2]);
   }
 
 }
 
-
-
-
-GLfloat shatterObj(struct Fragment* fragments[],mat4 viewMatrix,GLfloat timeScale){
+GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
   vec3 origCenter = {0,0,0};
 
   timeScale += 0.001f;
   glUseProgram(objectProgram);
 
-  mat4 trans = T(100.0f,2.0f,90.0f);
+  mat4 trans = T(100.0f,2.0f,85.0f);
 
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans.m);
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-  for (int k = 0; k < fragments[0]->numFragments; k++) {
-    GLint verts = fragments[k]->numVertices;
-    printf("%i \n",verts);
-    struct Fragment* curFrag = fragments[k];
-    squareModel = LoadDataToModel(
-      *(curFrag->vertices), NULL, *(curFrag->texCoord), NULL,
-      *(curFrag->indicies),verts, (verts-2)*3);
-      vec3 curCenter = {(*(curFrag->vertices))[0],(*(curFrag->vertices))[1],(*(curFrag->vertices))[2]};
+  if(firstTime){
+    GLint numPoints = fragments[0].numFragments;
+    models = malloc(numPoints*sizeof(Model*));
+    dirs = malloc(numPoints*sizeof(vec3));
+    firstTime = false; 
 
-      vec3 dir = VectorSub(curCenter,origCenter);
+    for (int k = 0; k < fragments[0].numFragments; k++) {
+      GLint verts = fragments[k].numVertices;
+      models[k] = LoadDataToModel(
+        (fragments[k].vertices), NULL, (fragments[k].texCoord), NULL,
+        (fragments[k].indicies),verts, (verts-2)*3);
+        vec3 curCenter = {((fragments[k].vertices))[0],((fragments[k].vertices))[1],((fragments[k].vertices))[2]};
 
-      dir = ScalarMult(dir,timeScale);
-      ////printf("%f ",dir.y);
-      mat4 trans2 = Mult(T(dir.x,dir.y,dir.z),trans);
+        dirs[k] = VectorSub(curCenter,origCenter);
 
-      glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+        vec3 dir = ScalarMult(dirs[k],timeScale);
 
-      DrawModel(squareModel,objectProgram,"inPosition",NULL,NULL);
+        mat4 trans2 = Mult(T(dir.x,dir.y,dir.z),trans);
+
+        glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+
+        DrawModel(models[k],objectProgram,"inPosition",NULL,NULL);
+      }
+    }else{
+      for (int k = 0; k < fragments[0].numFragments; k++) {
+        vec3 dir = ScalarMult(dirs[k],timeScale);
+
+        mat4 trans2 = Mult(T(dir.x,dir.y,dir.z),trans);
+
+        glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+
+        DrawModel(models[k],objectProgram,"inPosition",NULL,NULL);
+
+      }
     }
 
     return timeScale;

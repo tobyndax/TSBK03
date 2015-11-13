@@ -5,18 +5,19 @@
 #include "GL_utilities.h"
 #include "globals.h"
 
-struct Fragment** mainVoronoi();
-void testFragments(struct Fragment* fragments[],int k);
-GLfloat shatterObj(struct Fragment* fragments[],mat4 viewMatrix,GLfloat timeScale);
-void allocTest();
+struct Fragment* mainVoronoi(int numPoints);
+void testFragments(int k);
+GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale);
 
 
 struct Fragment{
   GLint numFragments;
   GLint numVertices;
-  GLfloat (*vertices)[];
-  GLfloat (*texCoord)[];
-  GLuint (*indicies)[];
+  GLfloat *vertices;
+  GLfloat *texCoord;
+  GLuint *indicies;
 };
+
+extern struct Fragment* fragments;
 
 #endif

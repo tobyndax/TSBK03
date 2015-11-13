@@ -15,7 +15,6 @@
 #include "voronoi.h"
 
 bool shatter = false;
-struct Fragment** fragments;
 GLfloat timeScale = 0.0f;
 
 void initSky(){
@@ -333,7 +332,6 @@ void displayTerrain(){
 }
 
 void displayObjects(mat4 viewMatrix){
-  mat4 total, modelView, trans;
 
   //-----------------light------------------------
   GLfloat camPos[] = {camPosition.x, camPosition.y, camPosition.z};
@@ -358,7 +356,7 @@ void display(void){
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
   displayObjects(viewMatrix);
 
-  timeScale = shatterObj(fragments,viewMatrix,timeScale);
+  timeScale = shatterObj(viewMatrix,timeScale);
 
   glutSwapBuffers();
 }
@@ -414,21 +412,9 @@ void mouse(int x, int y)
 
 
 int main(int argc, char **argv){
-  allocTest();
   printf("after alloc");
-  int numPoints = 75;
-  struct Fragment* tempFrags[numPoints];
-  for (size_t i = 0; i < numPoints; i++) {
-    tempFrags[i]= malloc(sizeof( struct Fragment));
-    fragments[i] = malloc(sizeof( struct Fragment));
-  }
-  struct Fragment** t = mainVoronoi();
-  for (size_t i = 0; i < numPoints; i++) {
-    tempFrags[i]= &(*t)[i];
-    fragments[i] = &(*t)[i];
-    printf("%i \n", tempFrags[i]->numVertices);
-  }
-  testFragments(tempFrags,0);
+  mainVoronoi(200);
+  testFragments(0);
 
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
