@@ -5,7 +5,7 @@
 #include "GL_utilities.h"
 #include "globals.h"
 
-struct Fragment* mainVoronoi(int numPoints);
+struct Fragment* mainVoronoi(int numPoints,GLfloat depth);
 void testFragments(int k);
 GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale);
 

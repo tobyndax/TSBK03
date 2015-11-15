@@ -413,7 +413,7 @@ void mouse(int x, int y)
 
 int main(int argc, char **argv){
   printf("after alloc");
-  mainVoronoi(200);
+  mainVoronoi(15,0.2);
   testFragments(0);
 
   glutInit(&argc, argv);

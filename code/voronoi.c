@@ -160,7 +160,7 @@ int ***my3DAllocation(size_t xlen, size_t ylen, size_t zlen)
   return p;
 }
 
-struct Fragment* mainVoronoi(int numPoints){
+struct Fragment* mainVoronoi(int numPoints,GLfloat depth){
   int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
   int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
 
@@ -282,41 +282,51 @@ struct Fragment* mainVoronoi(int numPoints){
   }
 
 
-  fragments = malloc(sizeof(struct Fragment)*numPoints);
+  fragments = malloc(sizeof(struct Fragment)*numPoints*5);
   for (int k = 0; k < numPoints; k++) {
-    fragments[k].numVertices = (GLint)pointsOnHullX[0][k];
+    fragments[k].numVertices = (GLint)pointsOnHullX[0][k]*2;
     printf("numVerts: %i \n ", fragments[k].numVertices);
     fragments[k].numFragments = (GLint)numPoints;
 
     //Allocate the vertices
     GLfloat *tempVertices;
-    tempVertices = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*3);
-
+    tempVertices = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*3*2);
+    int numP = (GLint)pointsOnHullX[0][k];
 
     tempVertices[0] = (GLfloat)pointsX[k]/50.0f-1;
     tempVertices[1] = (GLfloat)pointsY[k]/50.0f-1;
     tempVertices[2] = 0;
 
+    tempVertices[numP*3+0] = (GLfloat)pointsX[k]/50.0f-1;
+    tempVertices[numP*3+1] = (GLfloat)pointsY[k]/50.0f-1;
+    tempVertices[numP*3+2] = depth;
+
     GLuint *tempIndices;
-    tempIndices = malloc(sizeof(GLuint)*(pointsOnHullX[0][k] -1)*3);
+    int a = (pointsOnHullX[0][k] -2)*3*2;
+    tempIndices = malloc(sizeof(GLuint)*(pointsOnHullX[0][k] -2)*3*2*2);
 
     GLfloat *tempTexCoord;
-    tempTexCoord = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*2);
+    tempTexCoord = malloc(sizeof(GLfloat)*pointsOnHullX[0][k]*2*2);
 
     tempTexCoord[0] = (GLfloat)pointsX[k]/100.0f;
     tempTexCoord[1] = (GLfloat)pointsY[k]/100.0f;
+    tempTexCoord[numP*2+0] = (GLfloat)pointsX[k]/100.0f;
+    tempTexCoord[numP*2+1] = (GLfloat)pointsY[k]/100.0f;
 
     for (int i = 1; i < pointsOnHullX[0][k]; i++) {
       tempVertices[i*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
       tempVertices[i*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
       tempVertices[i*3+2] = 0;
 
-      tempIndices[(i-1)*3] = 0;
-      tempIndices[(i-1)*3+1] = i;
-      tempIndices[(i-1)*3+2] = i+1;
+      tempVertices[numP*3+i*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
+      tempVertices[numP*3+i*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
+      tempVertices[numP*3+i*3+2] = depth;
 
       tempTexCoord[i*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
       tempTexCoord[i*2+1] = (GLfloat)pointsOnHullX[i][k]/100.0f;
+
+      tempTexCoord[numP*2+i*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
+      tempTexCoord[numP*2+i*2+1] = (GLfloat)pointsOnHullX[i][k]/100.0f;
     }
 
     for (int i = 0; i < pointsOnHullX[0][k]-2; i++) {
@@ -324,6 +334,18 @@ struct Fragment* mainVoronoi(int numPoints){
       tempIndices[(i)*3] = 0;
       tempIndices[(i)*3+1] = i+1;
       tempIndices[(i)*3+2] = i+2;
+
+      tempIndices[(numP-1)*3+(i-1)*3] = numP+0;
+      tempIndices[(numP-1)*3+(i-1)*3+1] = numP+i+1;
+      tempIndices[(numP-1)*3+(i-1)*3+2] = numP+i+2;
+
+      tempIndices[(numP*2-3)*3+(2*i-1)*3] = i+1;
+      tempIndices[(numP*2-3)*3+1+(2*i-1)*3] = numP+i+1;
+      tempIndices[(numP*2-3)*3+2+(2*i-1)*3] = numP+i+2;
+
+      tempIndices[(numP*2-3)*3+(2*i)*3] = i+1;
+      tempIndices[(numP*2-3)*3+1+(2*i)*3] = numP+i+2;
+      tempIndices[(numP*2-3)*3+2+(2*i)*3] = i+2;
     }
 
     fragments[k].vertices = tempVertices;
@@ -351,7 +373,7 @@ void testFragments(int k){
     printf("Vertices: %f : %f : %f \n",((curFrag.vertices))[i*3 +0],((curFrag.vertices))[i*3 +1],((curFrag.vertices))[i*3 +2]);
 
   }
-  for (int i = 0; i < curFrag.numVertices-2; i++) {
+  for (int i = 0; i < (curFrag.numVertices-4)*2; i++) {
     printf("Indices %i : %i : %i \n",((curFrag.indicies))[i*3 +0],((curFrag.indicies))[i*3 +1],((curFrag.indicies))[i*3 +2]);
   }
 
@@ -372,13 +394,13 @@ GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
     GLint numPoints = fragments[0].numFragments;
     models = malloc(numPoints*sizeof(Model*));
     dirs = malloc(numPoints*sizeof(vec3));
-    firstTime = false; 
+    firstTime = false;
 
     for (int k = 0; k < fragments[0].numFragments; k++) {
       GLint verts = fragments[k].numVertices;
       models[k] = LoadDataToModel(
         (fragments[k].vertices), NULL, (fragments[k].texCoord), NULL,
-        (fragments[k].indicies),verts, (verts-2)*3);
+        (fragments[k].indicies),verts, (verts-4)*3*2);
         vec3 curCenter = {((fragments[k].vertices))[0],((fragments[k].vertices))[1],((fragments[k].vertices))[2]};
 
         dirs[k] = VectorSub(curCenter,origCenter);
