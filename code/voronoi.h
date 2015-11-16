@@ -16,6 +16,7 @@ struct Fragment{
   GLfloat *vertices;
   GLfloat *texCoord;
   GLuint *indicies;
+  GLfloat *normals;
 };
 
 extern struct Fragment* fragments;
