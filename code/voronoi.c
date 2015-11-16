@@ -387,24 +387,29 @@ struct Fragment* mainVoronoi(int numPoints,GLfloat depth){
       tempIndices[(numP*2-3)*3+1+(2*i)*3] = numP*2+numP+i+2-2;
       tempIndices[(numP*2-3)*3+2+(2*i)*3] = numP*2+i+2-1;
 
-      tempNormal[numP*3*3+i*3-6] = 0;
-      tempNormal[numP*3*3+i*3+1-6] = 0;
-      tempNormal[numP*3*3+i*3+2-6] = 0;
-
     }
 
 
-    for (int i = 0; i < (((fragments[k].numVertices+2)/4-2)*12-2)/3; i++) {
-      vec3 vert1 =SetVector( tempVertices[tempIndices[i*3+0]+0],tempVertices[tempIndices[i*3+0]+1],tempVertices[tempIndices[i*3+0]+2]);
-      vec3 vert2 =SetVector( tempVertices[tempIndices[i*3+1]+0],tempVertices[tempIndices[i*3+1]+1],tempVertices[tempIndices[i*3+1]+2]);
-      vec3 vert3 =SetVector( tempVertices[tempIndices[i*3+2]+0],tempVertices[tempIndices[i*3+2]+1],tempVertices[tempIndices[i*3+2]+2]);
+    for (int i = 0; i < (((fragments[k].numVertices+2)/4-2)*12-2)/3 +1; i++) {
+      vec3 vert1 =SetVector( tempVertices[tempIndices[i*3+0]*3+0],tempVertices[tempIndices[i*3+0]*3+1],tempVertices[tempIndices[i*3+0]*3+2]);
+      vec3 vert2 =SetVector( tempVertices[tempIndices[i*3+1]*3+0],tempVertices[tempIndices[i*3+1]*3+1],tempVertices[tempIndices[i*3+1]*3+2]);
+      vec3 vert3 =SetVector( tempVertices[tempIndices[i*3+2]*3+0],tempVertices[tempIndices[i*3+2]*3+1],tempVertices[tempIndices[i*3+2]*3+2]);
 
       vec3 d1 = VectorSub(vert2,vert1);
       vec3 d2 = VectorSub(vert3,vert1);
       vec3 normal = Normalize(CrossProduct(d2,d1));
-      tempNormal[i*3+0] = normal.x;
-      tempNormal[i*3+1] = normal.y;
-      tempNormal[i*3+0] = normal.z;
+
+      tempNormal[tempIndices[i*3+0]*3+0] = normal.x;
+      tempNormal[tempIndices[i*3+0]*3+1] = normal.y;
+      tempNormal[tempIndices[i*3+0]*3+2] = normal.z;
+
+      tempNormal[tempIndices[i*3+1]*3+0] = normal.x;
+      tempNormal[tempIndices[i*3+1]*3+1] = normal.y;
+      tempNormal[tempIndices[i*3+1]*3+2] = normal.z;
+
+      tempNormal[tempIndices[i*3+2]*3+0] = normal.x;
+      tempNormal[tempIndices[i*3+2]*3+1] = normal.y;
+      tempNormal[tempIndices[i*3+2]*3+2] = normal.z;
 
     }
 
@@ -432,11 +437,19 @@ void testFragments(int k){
   printf("%i \n",curFrag.numVertices);
   for (int i = 0; i < curFrag.numVertices; i++) {
 
-    printf("Vertices: %f : %f : %f \n",((curFrag.vertices))[i*3 +0],((curFrag.vertices))[i*3 +1],((curFrag.vertices))[i*3 +2]);
+    printf("Normals: %f : %f : %f \n",((curFrag.normals))[i*3 +0],((curFrag.normals))[i*3 +1],((curFrag.normals))[i*3 +2]);
 
   }
-  for (int i = 0; i < (curFrag.numVertices-6); i++) {
+  printf("%i \n", (((fragments[k].numVertices+2)/4-2)*12-2)/3);
+  for (int i = 0; i < (((fragments[k].numVertices+2)/4-2)*12-2)/3; i++) {
     printf("Indices %i : %i : %i \n",((curFrag.indicies))[i*3 +0],((curFrag.indicies))[i*3 +1],((curFrag.indicies))[i*3 +2]);
+  }
+
+  printf("%i \n",curFrag.numVertices);
+  for (int i = 0; i < curFrag.numVertices; i++) {
+
+    printf("Vertices: %f : %f : %f \n",((curFrag.vertices))[i*3 +0],((curFrag.vertices))[i*3 +1],((curFrag.vertices))[i*3 +2]);
+
   }
 
 }
