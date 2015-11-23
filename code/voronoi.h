@@ -19,6 +19,7 @@ struct Fragment{
   GLuint *indicies;
   GLfloat *normals;
   vec3 center;
+  GLfloat radius;
 };
 
 struct PhysicsObj
@@ -36,6 +37,7 @@ struct PhysicsObj
 	vec3 v; // Change in velocity
 	mat3 I;  // Inertia
 
+  GLfloat radius;
 };
 
 extern struct Fragment* fragments;

@@ -9,23 +9,26 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
+float ELASTICITY = 1.0f;
+
 struct Fragment* fragments;
 Model** models;
 
 struct PhysicsObj* objs;
 
-float cBallSize = 0.1f;
+float cBallSize = 0.025f;
 
 bool firstTime = true;
 
 void initObj(){
   int numObjs = fragments[0].numFragments;
-  objs = malloc(sizeof(struct PhysicsObj)*numObjs);
+  objs = malloc(sizeof(struct PhysicsObj)*numObjs+1);
 
   for (int i = 0; i < numObjs; i++)
   {
     printf("%f \n",fragments[i].center.y);
-    objs[i].mass = 1.0;
+    objs[i].mass = 1.0f;
+    objs[i].radius = fragments[i].radius;
     objs[i].Pos = SetVector(100.0f + fragments[i].center.x, 2.0f + fragments[i].center.y, 85.0f + fragments[i].center.z);
     objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
     objs[i].Rot = IdentityMatrix();
@@ -47,34 +50,48 @@ void initObj(){
 
   void updateWorld(double dT)
   {
+    vec3 r;
+    float imp;
     dT = 0.01f;
     int numObjs = fragments[0].numFragments;
     if(firstTime){
       initObj();
     }
     // Zero forces
-    int i, j;
-    for (i = 0; i < numObjs; i++)
+    for (int i = 0; i < numObjs; i++)
     {
       objs[i].F = SetVector(0,-9.82f*objs[i].mass,0);
       objs[i].T = SetVector(0,0,0);
     }
 
     // Wall tests
-    for (i = 0; i < numObjs; i++)
+    for (int i = 0; i < numObjs; i++)
     {
-      if (objs[i].Pos.y <= cBallSize){
+      if (objs[i].Pos.y <= objs[i].radius){
         objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
       }
       objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
     }
     //Collision tests
     for (int i = 0; i < numObjs; i++) {
+      for (int j = i+1 ; j < numObjs; j++) {
+        r = VectorSub(objs[i].Pos,objs[j].Pos);
+        if( Norm(r) < objs[i].radius + objs[j].radius){
+          imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
+          objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
+          objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
+        }
+      }
     }
 
+
     // Update state, follows the book closely
-    for (i = 0; i < numObjs; i++)
+    for (int i = 0; i < numObjs; i++)
     {
+
+      objs[i].LinMom.x *= 0.99;
+      objs[i].LinMom.z *= 0.99;
+
       vec3 dPos, dLinMom, dAngMom, dO;
       mat4 Rd;
       vec3 up = SetVector(0,1,0);
@@ -371,7 +388,8 @@ void initObj(){
     }
 
 
-    fragments = malloc(sizeof(struct Fragfment)*numPoints);
+
+    fragments = malloc(sizeof(struct Fragment)*numPoints);
     for (int k = 0; k < numPoints; k++) {
 
       GLfloat depth = 0.05f;
@@ -381,6 +399,25 @@ void initObj(){
 
       fragments[k].numIndices = fragments[k].numVertices;
 
+      float maxDist = 100.0f;
+
+      vec3 cent;
+      cent.x = pointsX[k]/50.0f -1;
+      cent.y = pointsY[k]/50.0f -1;
+      cent.z = 0;
+
+      for (int i = 0; i < pointsOnHullX[0][k]-1; i++) {
+        vec3 point;
+        point.x = pointsOnHullX[i+1][k]/50.0f-1;
+        point.y = pointsOnHullY[i+1][k]/50.0f-1;
+        point.z = 0;
+        float dist = Norm(VectorSub(point,cent));
+        if( dist < maxDist){
+        maxDist = dist;
+        }
+      }
+
+      fragments[k].radius = maxDist;
       //Allocate the vertices
       GLfloat *tempVertices;
       tempVertices = malloc(sizeof(GLfloat)*fragments[k].numVertices*3);
