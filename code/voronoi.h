@@ -18,6 +18,7 @@ struct Fragment{
   GLfloat *texCoord;
   GLuint *indicies;
   GLfloat *normals;
+  vec3 center;
 };
 
 struct PhysicsObj

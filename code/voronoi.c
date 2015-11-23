@@ -14,16 +14,19 @@ Model** models;
 
 struct PhysicsObj* objs;
 
+float cBallSize = 0.1f;
+
 bool firstTime = true;
 
 void initObj(){
   int numObjs = fragments[0].numFragments;
   objs = malloc(sizeof(struct PhysicsObj)*numObjs);
-  float cBallSize = 0.1;
+
   for (int i = 0; i < numObjs; i++)
   {
+    printf("%f \n",fragments[i].center.y);
     objs[i].mass = 1.0;
-    objs[i].Pos = SetVector((fragments[i].vertices)[0]+100.0f, (fragments[i].vertices)[1]+2.0f, (fragments[i].vertices[2])+85.0f);
+    objs[i].Pos = SetVector(100.0f + fragments[i].center.x, 2.0f + fragments[i].center.y, 85.0f + fragments[i].center.z);
     objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
     objs[i].Rot = IdentityMatrix();
     float s = pow(cBallSize,2)*objs[i].mass/3;
@@ -60,11 +63,13 @@ void initObj(){
     // Wall tests
     for (i = 0; i < numObjs; i++)
     {
-      if (objs[i].Pos.y <= 0.0f + 0.4f){
+      if (objs[i].Pos.y <= cBallSize){
         objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
       }
-
       objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
+    }
+    //Collision tests
+    for (int i = 0; i < numObjs; i++) {
     }
 
     // Update state, follows the book closely
@@ -341,7 +346,7 @@ void initObj(){
         endPoint[1] = stackY[1][k];
 
         for (int j = 1; j < stackX[0][k]; j++) {
-          ////printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
+          //printf("%i %i %i\n\n", stackX[j][k], stackY[j][k], k);
           if((endPoint[0] == pointsOnHullX[i][k]  && endPoint[1] == pointsOnHullY[i][k]) ||
           (leftOf(pointsOnHullX[i][k],pointsOnHullY[i][k],endPoint[0],endPoint[1],stackX[j][k],stackY[j][k],firstPoints[0][k],firstPoints[1][k])) ){
             //printf("%i %i %i\n", stackX[j][k], stackY[j][k], k);
@@ -351,7 +356,7 @@ void initObj(){
           }
         }
 
-        ////printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
+        //printf("%i %i %i %i %i  \n", endPoint[0],endPoint[1], firstPoints[0][k], firstPoints[1][k], k);
 
         i = i + 1;
         pointsOnHullX[i][k] = endPoint[0];
@@ -366,7 +371,7 @@ void initObj(){
     }
 
 
-    fragments = malloc(sizeof(struct Fragment)*numPoints);
+    fragments = malloc(sizeof(struct Fragfment)*numPoints);
     for (int k = 0; k < numPoints; k++) {
 
       GLfloat depth = 0.05f;
@@ -385,6 +390,9 @@ void initObj(){
 
       GLuint *tempIndices;
       tempIndices = malloc(sizeof(GLuint)*(fragments[k].numIndices));
+      fragments[k].center.x = pointsX[k]/50.0f -1;
+      fragments[k].center.y = pointsY[k]/50.0f -1;
+      fragments[k].center.z = 0;
 
       int str = 12*3; // 12*3 triangle point stride;
       int str2 = 12;
@@ -503,11 +511,11 @@ void initObj(){
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
     for (int k = 0; k < fragments[0].numFragments; k++) {
-      mat4 trans2 = T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z);
+      mat4 trans2 = T(objs[k].Pos.x-fragments[k].center.x,objs[k].Pos.y-fragments[k].center.y,objs[k].Pos.z-fragments[k].center.z);
 
       glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
 
-      DrawModel(models[k],objectProgram,"inPosition",NULL,NULL);
+      DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
 
     }
 
