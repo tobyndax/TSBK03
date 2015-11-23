@@ -13,8 +13,117 @@ struct Fragment* fragments;
 Model** models;
 vec3* dirs;
 
+struct PhysicsObj* objs;
+
 bool firstTime = true;
 
+void resetElapsedTime()
+{
+	struct timeval timeVal;
+	gettimeofday(&timeVal, 0);
+	startTime = (double) timeVal.tv_sec + (double) timeVal.tv_usec * 0.000001;
+}
+
+void initObj(){
+  int numObjs = fragements[0].numFragments;
+  objs = calloc(sizeof(PhysicsObj)*numObjs,NULL);
+  float cBallSize = 0.1;
+  for (i = 0; i < numObjs; i++)
+  {
+    objs[i].mass = 1.0;
+    objs[i].Pos = SetVector(fragements[i].vertices[0]+100.0f, fragements[i].vertices[1]+2.0f, fragements[i].vertices[0]+85.0f);
+    objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
+    objs[i].Rot = IdentityMatrix();
+    float s = pow(cBallSize,2)*objs[i].mass/3;
+    objs[i].I = mat4tomat3(S(s,s,s));
+  }
+  resetElapsedTime();
+}
+
+void updateWorld()
+{
+  int numObjs = fragements[0].numFragments;
+  if(firstTime){
+    initObj();
+  }
+  // Zero forces
+  int i, j;
+  for (i = 0; i < numObjs; i++)
+  {
+    objs[i].F = SetVector(0,0,0);
+    objs[i].T = SetVector(0,0,0);
+  }
+
+  // Wall tests
+  for (i = 0; i < numObjs; i++)
+  {
+    if (objs[i].X.x < -0.82266270 + kBallSize)
+    objs[i].P.x = abs(objs[i].P.x);
+
+    ball[i].v = ScalarMult(ball[i].P, 1.0/(ball[i].mass));
+  }
+
+
+  float imp;
+  vec3 r;
+  // Detect collisions, calculate speed differences, apply forces
+  for (i = 0; i < kNumBalls; i++){
+    for (j = i+1; j < kNumBalls; j++){
+      r = VectorSub(ball[i].X, ball[j].X);
+      if((Norm(r) < 2*kBallSize)){// && (DotProduct(ball[i].v,r) < DotProduct(ball[j].v, r)) ){
+        imp = -(ELASTICITY + 1)*DotProduct(Normalize(r),VectorSub(ball[i].v, ball[j].v))/(1.0/ball[i].mass + 1.0/ball[j].mass);
+        ball[i].P = VectorAdd(ScalarMult(Normalize(r), imp), ball[i].P); //impulse in direction of n, added to P.
+        ball[j].P = VectorAdd(ScalarMult(Normalize(r), -imp), ball[j].P);
+      }
+    }
+  }
+
+
+  // Control rotation here to reflect
+  // friction against floor, simplified as well as more correct
+  for (i = 0; i < kNumBalls; i++)
+  {
+    vec3 r = SetVector(0.0,kBallSize/2,0.0);
+    ball[i].L = CrossProduct(r,ball[i].P);
+    ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
+
+    vec3 vContact = VectorAdd(ScalarMult(ball[i].omega,kBallSize/2),ball[i].v);
+    if(Norm(ball[i].v)>0){
+      vec3 n = Normalize(ball[i].v);
+      ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
+    }
+  }
+  // Update state, follows the book closely
+  for (i = 0; i < kNumBalls; i++)
+  {
+    vec3 dX, dP, dL, dO;
+    mat4 Rd;
+    vec3 up = SetVector(0,1,0);
+    // Note: omega is not set. How do you calculate it?
+    vec3 rot_axis = CrossProduct(up, ball[i].P);
+    //ball[i].omega = ScalarMult(rot_axis, 1.0/(ball[i].mass*kBallSize));
+
+
+    //		v := P * 1/mass
+    ball[i].v = ScalarMult(ball[i].P, 1.0/(ball[i].mass));
+    //		X := X + v*dT
+    dX = ScalarMult(ball[i].v, deltaT); // dX := v*dT
+    ball[i].X = VectorAdd(ball[i].X, dX); // X := X + dX
+    //		R := R + Rd*dT
+    dO = ScalarMult(ball[i].omega, deltaT); // dO := omega*dT
+    Rd = CrossMatrix(dO); // Calc dO, add to R
+    Rd = Mult(Rd, ball[i].R); // Rotate the diff (NOTE: This was missing in early versions.)
+    ball[i].R = MatrixAdd(ball[i].R, Rd);
+    //		P := P + F * dT
+    dP = ScalarMult(ball[i].F, deltaT); // dP := F*dT
+    ball[i].P = VectorAdd(ball[i].P, dP); // P := P + dP
+    //		L := L + t * dT
+    dL = ScalarMult(ball[i].T, deltaT); // dL := T*dT
+    ball[i].L = VectorAdd(ball[i].L, dL); // L := L + dL
+
+    OrthoNormalizeMatrix(&ball[i].R);
+  }
+}
 
 void allocate2D(double **dat, int nrows, int ncols) {
   int i;
@@ -32,7 +141,6 @@ void allocate2D(double **dat, int nrows, int ncols) {
   }
 
 }
-
 
 // The following functions are from http://www.mas.ncl.ac.uk/~ndjw1/teaching/sim/transf/norm.c
 float surand()
@@ -63,7 +171,6 @@ float gennor(GLfloat conc)
 }
 
 // end of http://www.mas.ncl.ac.uk/~ndjw1/teaching/sim/transf/norm.c
-
 
 bool leftOf(int Ax ,int Ay,int Bx,int By,int Mx,int My,double firstX, double firstY){
 
@@ -389,51 +496,51 @@ struct Fragment* mainVoronoi(int numPoints){
     }
 
 
-      /*tempVertices[i*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
-      tempVertices[i*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
-      tempVertices[i*3+2] = 0;
+    /*tempVertices[i*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
+    tempVertices[i*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
+    tempVertices[i*3+2] = 0;
 
-      tempTexCoord[i*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
-      tempTexCoord[i*2+1] = (GLfloat)pointsOnHullY[i][k]/100.0f;
-    }
-    //Build vertices for top.
-    for (int i = 1; i < pointsOnHullX[0][k]; i++) {
-      tempVertices[(osv+i)*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
-      tempVertices[(osv+i)*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
-      tempVertices[(osv+i)*3+2] = depth;
-
-      tempTexCoord[(osv+i)*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
-      tempTexCoord[(osv+i)*2+1] = (GLfloat)pointsOnHullY[i][k]/100.0f;
-    }
-
-    for (int i = 0; i < pointsOnHullX[0][k]-2; i++) {
-
-      tempIndices[(i)*3] = 0;
-      tempIndices[(i)*3+1] = i+1;
-      tempIndices[(i)*3+2] = i+2;
-
-      tempIndices[(osv+i)*3] = osv;
-      tempIndices[(osv+i)*3+1] = osv+i+1;
-      tempIndices[(osv+i)*3+2] = osv+i+2;
-
-    }
-    */
-
-    fragments[k].vertices = tempVertices;
-    fragments[k].indicies = tempIndices;
-    fragments[k].normals = tempNormal;
-    //fragments[k].texCoord = tempTexCoord;
+    tempTexCoord[i*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
+    tempTexCoord[i*2+1] = (GLfloat)pointsOnHullY[i][k]/100.0f;
   }
+  //Build vertices for top.
+  for (int i = 1; i < pointsOnHullX[0][k]; i++) {
+  tempVertices[(osv+i)*3] = (GLfloat)pointsOnHullX[i][k]/50.0f-1;
+  tempVertices[(osv+i)*3+1] = (GLfloat)pointsOnHullY[i][k]/50.0f-1;
+  tempVertices[(osv+i)*3+2] = depth;
 
-  //testFragments(fragments);
-  free(pointsOnHullX);
-  free(pointsOnHullY);
-  free(stackX);
-  free(stackY);
-  free(bin);
-  free(firstPoints);
+  tempTexCoord[(osv+i)*2] = (GLfloat)pointsOnHullX[i][k]/100.0f;
+  tempTexCoord[(osv+i)*2+1] = (GLfloat)pointsOnHullY[i][k]/100.0f;
+}
 
-  return fragments;
+for (int i = 0; i < pointsOnHullX[0][k]-2; i++) {
+
+tempIndices[(i)*3] = 0;
+tempIndices[(i)*3+1] = i+1;
+tempIndices[(i)*3+2] = i+2;
+
+tempIndices[(osv+i)*3] = osv;
+tempIndices[(osv+i)*3+1] = osv+i+1;
+tempIndices[(osv+i)*3+2] = osv+i+2;
+
+}
+*/
+
+fragments[k].vertices = tempVertices;
+fragments[k].indicies = tempIndices;
+fragments[k].normals = tempNormal;
+//fragments[k].texCoord = tempTexCoord;
+}
+
+//testFragments(fragments);
+free(pointsOnHullX);
+free(pointsOnHullY);
+free(stackX);
+free(stackY);
+free(bin);
+free(firstPoints);
+
+return fragments;
 }
 
 void testFragments(int k){
