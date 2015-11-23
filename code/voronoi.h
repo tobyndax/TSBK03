@@ -26,7 +26,7 @@ struct PhysicsObj
 {
 	GLuint tex;
 	GLfloat mass;
-
+  
 	vec3 Pos, LinMom, AngMom; // position, linear momentum, angular momentum
 	mat4 Rot; // Rotation
 
