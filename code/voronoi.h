@@ -8,7 +8,7 @@
 struct Fragment* mainVoronoi(int numPoints);
 void testFragments(int k);
 GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale);
-
+void updateWorld(double dT);
 
 struct Fragment{
   GLint numFragments;
@@ -20,7 +20,7 @@ struct Fragment{
   GLfloat *normals;
 };
 
-typedef struct
+struct PhysicsObj
 {
 	GLuint tex;
 	GLfloat mass;
@@ -35,7 +35,7 @@ typedef struct
 	vec3 v; // Change in velocity
 	mat3 I;  // Inertia
 
-} PhysicsObj;
+};
 
 extern struct Fragment* fragments;
 

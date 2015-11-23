@@ -13,9 +13,14 @@
 #include "terrain.h"
 #include <math.h>
 #include "voronoi.h"
+#include <sys/time.h>
 
 bool shatter = false;
 GLfloat timeScale = 0.0f;
+
+double dT = 0;
+double startTime = 0;
+double currentTime = 0;
 
 void initSky(){
 
@@ -341,6 +346,7 @@ void displayObjects(mat4 viewMatrix){
 }
 
 void display(void){
+  updateWorld(dT);
   // clear the screen
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -361,10 +367,31 @@ void display(void){
   glutSwapBuffers();
 }
 
+
+void resetElapsedTime()
+{
+  struct timeval timeVal;
+  gettimeofday(&timeVal, 0);
+  startTime = (double) timeVal.tv_sec + (double) timeVal.tv_usec * 0.000001;
+}
+
+float getElapsedTime()
+{
+  struct timeval timeVal;
+  gettimeofday(&timeVal, 0);
+  double currentTime = (double) timeVal.tv_sec
+  + (double) timeVal.tv_usec * 0.000001;
+
+  return currentTime - startTime;
+}
+
+
 void timer(int i)
 {
-  glutTimerFunc(20, &timer, i);
   glutPostRedisplay();
+  dT = getElapsedTime() - currentTime;
+  currentTime = getElapsedTime();
+  glutTimerFunc(20, &timer, i);
 }
 
 void mouse(int x, int y)
@@ -429,7 +456,7 @@ int main(int argc, char **argv){
   initKeymapManager();
 
 
-
+  resetElapsedTime();
   glutTimerFunc(20, &timer, 0);
 
   glutPassiveMotionFunc(mouse);

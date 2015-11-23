@@ -17,32 +17,24 @@ struct PhysicsObj* objs;
 
 bool firstTime = true;
 
-void resetElapsedTime()
-{
-	struct timeval timeVal;
-	gettimeofday(&timeVal, 0);
-	startTime = (double) timeVal.tv_sec + (double) timeVal.tv_usec * 0.000001;
-}
-
 void initObj(){
-  int numObjs = fragements[0].numFragments;
-  objs = calloc(sizeof(PhysicsObj)*numObjs,NULL);
+  int numObjs = fragments[0].numFragments;
+  objs = malloc(sizeof(struct PhysicsObj)*numObjs);
   float cBallSize = 0.1;
-  for (i = 0; i < numObjs; i++)
+  for (int i = 0; i < numObjs; i++)
   {
     objs[i].mass = 1.0;
-    objs[i].Pos = SetVector(fragements[i].vertices[0]+100.0f, fragements[i].vertices[1]+2.0f, fragements[i].vertices[0]+85.0f);
+    objs[i].Pos = SetVector(fragments[i].vertices[0]+100.0f, fragments[i].vertices[1]+2.0f, fragments[i].vertices[0]+85.0f);
     objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
     objs[i].Rot = IdentityMatrix();
     float s = pow(cBallSize,2)*objs[i].mass/3;
     objs[i].I = mat4tomat3(S(s,s,s));
   }
-  resetElapsedTime();
 }
 
-void updateWorld()
+void updateWorld(double dT)
 {
-  int numObjs = fragements[0].numFragments;
+  int numObjs = fragments[0].numFragments;
   if(firstTime){
     initObj();
   }
@@ -50,78 +42,47 @@ void updateWorld()
   int i, j;
   for (i = 0; i < numObjs; i++)
   {
-    objs[i].F = SetVector(0,0,0);
+    objs[i].F = SetVector(0,-9.82f*objs[i].mass,0);
     objs[i].T = SetVector(0,0,0);
   }
 
   // Wall tests
   for (i = 0; i < numObjs; i++)
   {
-    if (objs[i].X.x < -0.82266270 + kBallSize)
-    objs[i].P.x = abs(objs[i].P.x);
-
-    ball[i].v = ScalarMult(ball[i].P, 1.0/(ball[i].mass));
+    //if (objs[i].Pos.y <= 0.0f + cBallSize)
+    objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
+    objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
   }
 
-
-  float imp;
-  vec3 r;
-  // Detect collisions, calculate speed differences, apply forces
-  for (i = 0; i < kNumBalls; i++){
-    for (j = i+1; j < kNumBalls; j++){
-      r = VectorSub(ball[i].X, ball[j].X);
-      if((Norm(r) < 2*kBallSize)){// && (DotProduct(ball[i].v,r) < DotProduct(ball[j].v, r)) ){
-        imp = -(ELASTICITY + 1)*DotProduct(Normalize(r),VectorSub(ball[i].v, ball[j].v))/(1.0/ball[i].mass + 1.0/ball[j].mass);
-        ball[i].P = VectorAdd(ScalarMult(Normalize(r), imp), ball[i].P); //impulse in direction of n, added to P.
-        ball[j].P = VectorAdd(ScalarMult(Normalize(r), -imp), ball[j].P);
-      }
-    }
-  }
-
-
-  // Control rotation here to reflect
-  // friction against floor, simplified as well as more correct
-  for (i = 0; i < kNumBalls; i++)
-  {
-    vec3 r = SetVector(0.0,kBallSize/2,0.0);
-    ball[i].L = CrossProduct(r,ball[i].P);
-    ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
-
-    vec3 vContact = VectorAdd(ScalarMult(ball[i].omega,kBallSize/2),ball[i].v);
-    if(Norm(ball[i].v)>0){
-      vec3 n = Normalize(ball[i].v);
-      ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
-    }
-  }
   // Update state, follows the book closely
-  for (i = 0; i < kNumBalls; i++)
+  for (i = 0; i < numObjs; i++)
   {
-    vec3 dX, dP, dL, dO;
+    vec3 dPos, dLinMom, dAngMom, dO;
     mat4 Rd;
     vec3 up = SetVector(0,1,0);
     // Note: omega is not set. How do you calculate it?
-    vec3 rot_axis = CrossProduct(up, ball[i].P);
+    vec3 rot_axis = CrossProduct(up, objs[i].LinMom);
     //ball[i].omega = ScalarMult(rot_axis, 1.0/(ball[i].mass*kBallSize));
 
 
     //		v := P * 1/mass
-    ball[i].v = ScalarMult(ball[i].P, 1.0/(ball[i].mass));
+    objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
     //		X := X + v*dT
-    dX = ScalarMult(ball[i].v, deltaT); // dX := v*dT
-    ball[i].X = VectorAdd(ball[i].X, dX); // X := X + dX
+    dPos = ScalarMult(objs[i].v, dT); // dX := v*dT
+    objs[i].Pos = VectorAdd(objs[i].Pos, dPos); // X := X + dX
     //		R := R + Rd*dT
-    dO = ScalarMult(ball[i].omega, deltaT); // dO := omega*dT
+    dO = ScalarMult(objs[i].omega, dT); // dO := omega*dT
     Rd = CrossMatrix(dO); // Calc dO, add to R
-    Rd = Mult(Rd, ball[i].R); // Rotate the diff (NOTE: This was missing in early versions.)
-    ball[i].R = MatrixAdd(ball[i].R, Rd);
+    Rd = Mult(Rd, objs[i].Rot); // Rotate the diff (NOTE: This was missing in early versions.)
+    objs[i].Rot = MatrixAdd(objs[i].Rot, Rd);
     //		P := P + F * dT
-    dP = ScalarMult(ball[i].F, deltaT); // dP := F*dT
-    ball[i].P = VectorAdd(ball[i].P, dP); // P := P + dP
+    dLinMom = ScalarMult(objs[i].F, dT); // dP := F*dT
+    objs[i].LinMom = VectorAdd(objs[i].LinMom, dLinMom); // P := P + dP
     //		L := L + t * dT
-    dL = ScalarMult(ball[i].T, deltaT); // dL := T*dT
-    ball[i].L = VectorAdd(ball[i].L, dL); // L := L + dL
+    dAngMom = ScalarMult(objs[i].T, dT); // dL := T*dT
+    objs[i].AngMom = VectorAdd(objs[i].AngMom, dAngMom); // L := L + dL
 
-    OrthoNormalizeMatrix(&ball[i].R);
+    OrthoNormalizeMatrix(&objs[i].Rot);
   }
 }
 
