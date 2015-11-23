@@ -77,10 +77,38 @@ void initObj(){
       for (int j = i+1 ; j < numObjs; j++) {
         r = VectorSub(objs[i].Pos,objs[j].Pos);
         if( Norm(r) < objs[i].radius + objs[j].radius){
-          imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
-          objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
-          objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
+
+          //should be for every point on hull not numVertices
+          for(int k = 0;k < fragments[i].numVertices/3;k++){
+            for(int l = 0;l < fragments[j].numVertices/3;l++){
+
+              vec3 radiusi = ScalarMult(VectorSub(SetVector((fragments[i].vertices)[3*k],(fragments[i].vertices)[3*k+1],(fragments[i].vertices)[3*k+2]),objs[i].Pos),0.5);
+              vec3 radiusj = ScalarMult(VectorSub(SetVector((fragments[j].vertices)[3*l],(fragments[j].vertices)[3*l+1],(fragments[j].vertices)[3*l+2]),objs[j].Pos),0.5);
+              vec3 radiusd = VectorSub(VectorAdd(objs[i].Pos,radiusi),VectorAdd(objs[j].Pos,radiusj));
+
+              if( Norm(radiusd) < Norm(radiusi) + Norm(radiusj)){
+                imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
+                objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
+                objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
+              }
+            }
+          }
         }
+      }
+    }
+
+    // Control rotation here to reflect
+    // friction against floor, simplified as well as more correct
+    for (int i = 0; i < numObjs; i++)
+    {
+      vec3 r = SetVector(0.0,objs[i].radius/2,0.0);
+      objs[i].AngMom = CrossProduct(r,objs[i].LinMom);
+      objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
+
+      vec3 vContact = VectorAdd(ScalarMult(objs[i].omega,objs[i].radius/2),objs[i].v);
+      if(Norm(objs[i].v)>0){
+        vec3 n = Normalize(objs[i].v);
+        objs[i].F = ScalarMult(n,-DotProduct(n,objs[i].AngMom)*0.2f);
       }
     }
 
@@ -399,7 +427,7 @@ void initObj(){
 
       fragments[k].numIndices = fragments[k].numVertices;
 
-      float maxDist = 100.0f;
+      float maxDist = 0.0f;
 
       vec3 cent;
       cent.x = pointsX[k]/50.0f -1;
@@ -412,7 +440,7 @@ void initObj(){
         point.y = pointsOnHullY[i+1][k]/50.0f-1;
         point.z = 0;
         float dist = Norm(VectorSub(point,cent));
-        if( dist < maxDist){
+        if( dist > maxDist){
         maxDist = dist;
         }
       }
