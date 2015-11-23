@@ -47,9 +47,9 @@ void main(void)
 		outColor = texture(grass, texCoord) * vec4(out_Color_temp,1);
 	}
 */
-	const vec3 light = vec3(2,2,0);
-	//const vec3 light1 = vec3(0,0.5,-10);
-	//const vec3 light2 = vec3(10,2,0);
-	float shading = clamp(dot(light,light_Normal),0,1);//+clamp(dot(light1,light_Normal),0,1);//+clamp(dot(light2,light_Normal),0,1);
+	const vec3 light = 0.75*normalize(vec3(0,-1,-1));
+	const vec3 light1 = 0.5*normalize(vec3(0,0.5,-10));
+	const vec3 light2 = 0.5*normalize(vec3(10,2,0));
+	float shading = clamp(dot(light,light_Normal),0,1)+clamp(dot(light1,light_Normal),0,1)+clamp(dot(light2,light_Normal),0,1);
 	outColor = shading*texture(tex, texCoord);
 }
