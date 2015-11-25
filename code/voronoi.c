@@ -68,14 +68,19 @@ void initObj(){
     for (int i = 0; i < numObjs; i++)
     {
       if (objs[i].Pos.y <= objs[i].radius){
+        GLint minYindex = 0;
+        GLfloat minY = 1000000;
         for(int k = 0;k < fragments[i].numOnHull;k++){
-          vec3 radius = ScalarMult(VectorSub(SetVector((fragments[i].pointsOnHull)[3*k],(fragments[i].pointsOnHull)[3*k+1],(fragments[i].pointsOnHull)[3*k+2]),objs[i].Pos),0.5);
-          vec3 np = VectorAdd(objs[i].Pos,radius);
-          np.y -= Norm(radius);
-          if (np.y <= 0){
-            objs[i].Pos.y = objs[i].radius;
-            objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
+          GLfloat tempY = (fragments[i].pointsOnHull)[3*k+1];
+          if(tempY<minY){
+            minYindex = k;
+            minY = tempY;
           }
+        }
+
+        if (minY <= 0){
+          objs[i].Pos.y = objs[i].Pos.y-minY;
+          objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
         }
       }
       objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
@@ -114,32 +119,32 @@ void initObj(){
       /*
       for (int i = 0; i < numObjs; i++)
       {
-        vec3 r = SetVector(0.0,objs[i].radius/2,0.0);
-        objs[i].AngMom = CrossProduct(r,objs[i].LinMom);
-        objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
+      vec3 r = SetVector(0.0,objs[i].radius/2,0.0);
+      objs[i].AngMom = CrossProduct(r,objs[i].LinMom);
+      objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
 
-        vec3 vContact = VectorAdd(ScalarMult(objs[i].omega,objs[i].radius),objs[i].v);
-        if(Norm(objs[i].v)>0){
-          vec3 n = Normalize(objs[i].v);
-          objs[i].F = VectorAdd(objs[i].F,ScalarMult(n,-DotProduct(n,objs[i].LinMom)*0.2f));
-        }
-      }
-*/
-
-
-      /*
-      for (i = 0; i < kNumBalls; i++)
-      {
-      vec3 r = SetVector(0.0,kBallSize/2,0.0);
-      ball[i].L = CrossProduct(r,ball[i].P);
-      ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
-
-      if(Norm(ball[i].v)>0){
-      vec3 n = Normalize(ball[i].v);
-      ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
+      vec3 vContact = VectorAdd(ScalarMult(objs[i].omega,objs[i].radius),objs[i].v);
+      if(Norm(objs[i].v)>0){
+      vec3 n = Normalize(objs[i].v);
+      objs[i].F = VectorAdd(objs[i].F,ScalarMult(n,-DotProduct(n,objs[i].LinMom)*0.2f));
     }
   }
   */
+
+
+  /*
+  for (i = 0; i < kNumBalls; i++)
+  {
+  vec3 r = SetVector(0.0,kBallSize/2,0.0);
+  ball[i].L = CrossProduct(r,ball[i].P);
+  ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
+
+  if(Norm(ball[i].v)>0){
+  vec3 n = Normalize(ball[i].v);
+  ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
+}
+}
+*/
 }
 
 
