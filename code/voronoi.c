@@ -29,7 +29,7 @@ void initObj(){
     printf("%f \n",fragments[i].center.y);
     objs[i].mass = 1.0f;
     objs[i].radius = fragments[i].radius;
-    objs[i].Pos = SetVector(100.0f - fragments[i].center.x, 2.0f - fragments[i].center.y, 85.0f - fragments[i].center.z);
+    objs[i].Pos = SetVector(0.0f, 50.0f,0.0f);
     objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
     objs[i].Rot = IdentityMatrix();
     float s = pow(cBallSize,2)*objs[i].mass/3;
@@ -60,7 +60,7 @@ void initObj(){
     // Zero forces
     for (int i = 0; i < numObjs; i++)
     {
-      objs[i].F = SetVector(0,-9.82f*objs[i].mass,0);
+      objs[i].F = SetVector(0,-9.82f*objs[i].mass * 100.0f,0);
       objs[i].T = SetVector(0,0,0);
     }
 
@@ -426,8 +426,6 @@ struct Fragment* mainVoronoi(int numPoints){
     pointsOnHullX[1][k] = firstPoints[0][k];
     pointsOnHullY[1][k] = firstPoints[1][k];
 
-
-
     while(notDone){
 
       endPoint[0] = stackX[1][k];
@@ -462,22 +460,21 @@ struct Fragment* mainVoronoi(int numPoints){
   for (int k = 0; k < numPoints; k++) {
 
     vec3 cent;
-    cent.x = pointsX[k]/50.0f -1;
-    cent.y = pointsY[k]/50.0f -1;
+    cent.x = pointsX[k];
+    cent.y = pointsY[k];
     cent.z = 0;
 
     fragments[k].numOnHull = pointsOnHullX[0][k]-1;
     GLfloat* tempPointsOnHull = malloc(sizeof(GLfloat)*3*pointsOnHullX[0][k]);
 
     for(int i=0;i<pointsOnHullX[0][k]-1; i++){
-      tempPointsOnHull[i*3] = pointsOnHullX[i+1][k]/50-1-cent.x;
-      tempPointsOnHull[i*3+1] = pointsOnHullY[i+1][k]/50-1-cent.y;
+      tempPointsOnHull[i*3] = pointsOnHullX[i+1][k];
+      tempPointsOnHull[i*3+1] = pointsOnHullY[i+1][k];
       tempPointsOnHull[i*3+2] = depth/2.0f;
     }
 
     fragments[k].pointsOnHull = tempPointsOnHull;
 
-    GLfloat depth = 0.05f;
     fragments[k].numVertices = (GLint)((pointsOnHullX[0][k]-1)*12);
 
     fragments[k].numFragments = (GLint)numPoints;
@@ -488,8 +485,8 @@ struct Fragment* mainVoronoi(int numPoints){
 
     for (int i = 0; i < pointsOnHullX[0][k]-1; i++) {
       vec3 point;
-      point.x = pointsOnHullX[i+1][k]/50.0f-1;
-      point.y = pointsOnHullY[i+1][k]/50.0f-1;
+      point.x = pointsOnHullX[i+1][k];
+      point.y = pointsOnHullY[i+1][k];
       point.z = 0;
       float dist = Norm(VectorSub(point,cent));
       if( dist > maxDist){
@@ -507,63 +504,63 @@ struct Fragment* mainVoronoi(int numPoints){
 
     GLuint *tempIndices;
     tempIndices = malloc(sizeof(GLuint)*(fragments[k].numIndices));
-    fragments[k].center.x = pointsX[k]/50.0f -1;
-    fragments[k].center.y = pointsY[k]/50.0f -1;
+    fragments[k].center.x = pointsX[k];
+    fragments[k].center.y = pointsY[k];
     fragments[k].center.z = depth/2;
 
     int str = 12*3; // 12*3 triangle point stride;
     int str2 = 12;
     for (int i = 1; i < fragments[k].numVertices/12; i++) {
       //triangle 1
-      tempVertices[(i-1)*str +0] = pointsX[k]/50.0f-1;
-      tempVertices[(i-1)*str +1] = pointsY[k]/50.0f-1;
+      tempVertices[(i-1)*str +0] = pointsX[k];
+      tempVertices[(i-1)*str +1] = pointsY[k];
       tempVertices[(i-1)*str +2] = 0;
 
-      tempVertices[(i-1)*str +3] = pointsOnHullX[i][k]/50.0f-1;
-      tempVertices[(i-1)*str +4] = pointsOnHullY[i][k]/50.0f-1;
+      tempVertices[(i-1)*str +3] = pointsOnHullX[i][k];
+      tempVertices[(i-1)*str +4] = pointsOnHullY[i][k];
       tempVertices[(i-1)*str +5] = 0;
 
-      tempVertices[(i-1)*str +6] = pointsOnHullX[i+1][k]/50.0f-1;
-      tempVertices[(i-1)*str +7] = pointsOnHullY[i+1][k]/50.0f-1;
+      tempVertices[(i-1)*str +6] = pointsOnHullX[i+1][k] ;
+      tempVertices[(i-1)*str +7] = pointsOnHullY[i+1][k] ;
       tempVertices[(i-1)*str +8] = 0;
 
       //triangle 2
-      tempVertices[(i-1)*str+9 +0] = pointsOnHullX[i][k]/50.0f-1;
-      tempVertices[(i-1)*str+9 +1] = pointsOnHullY[i][k]/50.0f-1;
+      tempVertices[(i-1)*str+9 +0] = pointsOnHullX[i][k] ;
+      tempVertices[(i-1)*str+9 +1] = pointsOnHullY[i][k] ;
       tempVertices[(i-1)*str+9 +2] = 0;
 
-      tempVertices[(i-1)*str+9 +3] = pointsOnHullX[i+1][k]/50.0f-1;
-      tempVertices[(i-1)*str+9 +4] = pointsOnHullY[i+1][k]/50.0f-1;
+      tempVertices[(i-1)*str+9 +3] = pointsOnHullX[i+1][k] ;
+      tempVertices[(i-1)*str+9 +4] = pointsOnHullY[i+1][k] ;
       tempVertices[(i-1)*str+9 +5] = 0;
 
-      tempVertices[(i-1)*str+9 +6] = pointsOnHullX[i][k]/50.0f-1;
-      tempVertices[(i-1)*str+9 +7] = pointsOnHullY[i][k]/50.0f-1;
+      tempVertices[(i-1)*str+9 +6] = pointsOnHullX[i][k] ;
+      tempVertices[(i-1)*str+9 +7] = pointsOnHullY[i][k] ;
       tempVertices[(i-1)*str+9 +8] = depth;
 
       //triangle 3
-      tempVertices[(i-1)*str+18 +3] = pointsOnHullX[i][k]/50.0f-1;
-      tempVertices[(i-1)*str+18 +4] = pointsOnHullY[i][k]/50.0f-1;
+      tempVertices[(i-1)*str+18 +3] = pointsOnHullX[i][k] ;
+      tempVertices[(i-1)*str+18 +4] = pointsOnHullY[i][k] ;
       tempVertices[(i-1)*str+18 +5] = depth;
 
-      tempVertices[(i-1)*str+18 +0] = pointsOnHullX[i+1][k]/50.0f-1;
-      tempVertices[(i-1)*str+18 +1] = pointsOnHullY[i+1][k]/50.0f-1;
+      tempVertices[(i-1)*str+18 +0] = pointsOnHullX[i+1][k] ;
+      tempVertices[(i-1)*str+18 +1] = pointsOnHullY[i+1][k] ;
       tempVertices[(i-1)*str+18 +2] = depth;
 
-      tempVertices[(i-1)*str+18 +6] = pointsOnHullX[i+1][k]/50.0f-1;
-      tempVertices[(i-1)*str+18 +7] = pointsOnHullY[i+1][k]/50.0f-1;
+      tempVertices[(i-1)*str+18 +6] = pointsOnHullX[i+1][k] ;
+      tempVertices[(i-1)*str+18 +7] = pointsOnHullY[i+1][k] ;
       tempVertices[(i-1)*str+18 +8] = 0;
 
       //triangle 4
-      tempVertices[(i-1)*str+27 +0] = pointsOnHullX[i][k]/50.0f-1;
-      tempVertices[(i-1)*str+27 +1] = pointsOnHullY[i][k]/50.0f-1;
+      tempVertices[(i-1)*str+27 +0] = pointsOnHullX[i][k] ;
+      tempVertices[(i-1)*str+27 +1] = pointsOnHullY[i][k] ;
       tempVertices[(i-1)*str+27 +2] = depth;
 
-      tempVertices[(i-1)*str+27 +6] = pointsOnHullX[i+1][k]/50.0f-1;
-      tempVertices[(i-1)*str+27 +7] = pointsOnHullY[i+1][k]/50.0f-1;
+      tempVertices[(i-1)*str+27 +6] = pointsOnHullX[i+1][k] ;
+      tempVertices[(i-1)*str+27 +7] = pointsOnHullY[i+1][k] ;
       tempVertices[(i-1)*str+27 +8] = depth;
 
-      tempVertices[(i-1)*str+27 +3] = pointsX[k]/50.0f-1;
-      tempVertices[(i-1)*str+27 +4] = pointsY[k]/50.0f-1;
+      tempVertices[(i-1)*str+27 +3] = pointsX[k] ;
+      tempVertices[(i-1)*str+27 +4] = pointsY[k] ;
       tempVertices[(i-1)*str+27 +5] = depth;
     }
 
@@ -627,16 +624,17 @@ GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
   glUseProgram(objectProgram);
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-  //for (int k = 0; k < fragments[0].numFragments; k++) {
-  int k=0;
-    mat4 rot = Mult(objs[k].Rot,T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z));
-    mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
+  for (int k = 0; k < fragments[0].numFragments; k++) {
 
+    //mat4 voroToRend = Mult(T(-1,-1,0),S(1.0f,1.0f,1));
+    //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
+    //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
+    mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(objs[k].Pos.x,objs[k].Pos.y-50.0f,objs[k].Pos.z)));
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
 
     DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
 
-  //}
+  }
 
   return timeScale;
 }
