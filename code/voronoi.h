@@ -15,18 +15,20 @@ struct Fragment{
   GLint numIndices;
   GLint numVertices;
   GLfloat *vertices;
+  GLfloat *pointsOnHull;
   GLfloat *texCoord;
   GLuint *indicies;
   GLfloat *normals;
   vec3 center;
   GLfloat radius;
+  GLint numOnHull;
 };
 
 struct PhysicsObj
 {
 	GLuint tex;
 	GLfloat mass;
-  
+
 	vec3 Pos, LinMom, AngMom; // position, linear momentum, angular momentum
 	mat4 Rot; // Rotation
 

@@ -68,7 +68,15 @@ void initObj(){
     for (int i = 0; i < numObjs; i++)
     {
       if (objs[i].Pos.y <= objs[i].radius){
-        objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
+        for(int k = 0;k < fragments[i].numOnHull;k++){
+          vec3 radius = ScalarMult(VectorSub(SetVector((fragments[i].pointsOnHull)[3*k],(fragments[i].pointsOnHull)[3*k+1],(fragments[i].pointsOnHull)[3*k+2]),objs[i].Pos),0.5);
+          vec3 np = VectorAdd(objs[i].Pos,radius);
+          np.y -= Norm(radius);
+          if (np.y <= 0){
+            objs[i].Pos.y = objs[i].radius;
+            objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
+          }
+        }
       }
       objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
     }
@@ -79,25 +87,31 @@ void initObj(){
         if( Norm(r) < objs[i].radius + objs[j].radius){
 
           //should be for every point on hull not numVertices
-          for(int k = 0;k < fragments[i].numVertices/3;k++){
-            for(int l = 0;l < fragments[j].numVertices/3;l++){
+          for(int k = 0;k < fragments[i].numOnHull;k++){
+            for(int l = 0;l < fragments[j].numOnHull;l++){
 
-              vec3 radiusi = ScalarMult(VectorSub(SetVector((fragments[i].vertices)[3*k],(fragments[i].vertices)[3*k+1],(fragments[i].vertices)[3*k+2]),objs[i].Pos),0.5);
-              vec3 radiusj = ScalarMult(VectorSub(SetVector((fragments[j].vertices)[3*l],(fragments[j].vertices)[3*l+1],(fragments[j].vertices)[3*l+2]),objs[j].Pos),0.5);
+              vec3 radiusi = ScalarMult(VectorSub(SetVector((fragments[i].pointsOnHull)[3*k],(fragments[i].pointsOnHull)[3*k+1],(fragments[i].pointsOnHull)[3*k+2]),objs[i].Pos),0.5);
+              vec3 radiusj = ScalarMult(VectorSub(SetVector((fragments[j].pointsOnHull)[3*l],(fragments[j].pointsOnHull)[3*l+1],(fragments[j].pointsOnHull)[3*l+2]),objs[j].Pos),0.5);
               vec3 radiusd = VectorSub(VectorAdd(objs[i].Pos,radiusi),VectorAdd(objs[j].Pos,radiusj));
 
+              //collision
               if( Norm(radiusd) < Norm(radiusi) + Norm(radiusj)){
+                objs[i].Pos = VectorAdd(objs[i].Pos, ScalarMult(VectorSub(objs[i].Pos,objs[j].Pos),0.00006f));
+                objs[j].Pos = VectorAdd(objs[j].Pos, ScalarMult(VectorSub(objs[j].Pos,objs[i].Pos),0.00006f));
+                /*
                 imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
                 objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
                 objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
 
                 objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].LinMom);
                 objs[j].omega = MultMat3Vec3(InvertMat3(objs[j].I),objs[j].LinMom);
+                */
               }
             }
           }
         }
       }
+      /*
       for (int i = 0; i < numObjs; i++)
       {
         vec3 r = SetVector(0.0,objs[i].radius/2,0.0);
@@ -110,7 +124,7 @@ void initObj(){
           objs[i].F = VectorAdd(objs[i].F,ScalarMult(n,-DotProduct(n,objs[i].LinMom)*0.2f));
         }
       }
-
+*/
 
 
       /*
@@ -126,21 +140,6 @@ void initObj(){
     }
   }
   */
-}
-
-// Control rotation here to reflect
-// friction against floor, simplified as well as more correct
-for (int i = 0; i < numObjs; i++)
-{
-  vec3 r = SetVector(0.0,objs[i].radius/2,0.0);
-  objs[i].AngMom = CrossProduct(r,objs[i].LinMom);
-  objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
-
-  vec3 vContact = VectorAdd(ScalarMult(objs[i].omega,objs[i].radius/2),objs[i].v);
-  if(Norm(objs[i].v)>0){
-    vec3 n = Normalize(objs[i].v);
-    objs[i].F = ScalarMult(n,-DotProduct(n,objs[i].AngMom)*0.2f);
-  }
 }
 
 
@@ -321,6 +320,7 @@ int ***my3DAllocation(size_t xlen, size_t ylen, size_t zlen)
 }
 
 struct Fragment* mainVoronoi(int numPoints){
+  GLfloat depth = 0.05f;
   int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
   int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
 
@@ -446,6 +446,17 @@ struct Fragment* mainVoronoi(int numPoints){
   fragments = malloc(sizeof(struct Fragment)*numPoints);
   for (int k = 0; k < numPoints; k++) {
 
+    fragments[k].numOnHull = pointsOnHullX[0][k]-1;
+    GLfloat* tempPointsOnHull = malloc(sizeof(GLfloat)*3*pointsOnHullX[0][k]);
+
+    for(int i=0;i<pointsOnHullX[0][k]-1; i++){
+      tempPointsOnHull[i*3] = pointsOnHullX[i+1][k];
+      tempPointsOnHull[i*3+1] = pointsOnHullY[i+1][k];
+      tempPointsOnHull[i*3+2] = depth/2;
+    }
+
+    fragments[k].pointsOnHull = tempPointsOnHull;
+
     GLfloat depth = 0.05f;
     fragments[k].numVertices = (GLint)((pointsOnHullX[0][k]-1)*12);
 
@@ -483,7 +494,7 @@ struct Fragment* mainVoronoi(int numPoints){
     tempIndices = malloc(sizeof(GLuint)*(fragments[k].numIndices));
     fragments[k].center.x = pointsX[k]/50.0f -1;
     fragments[k].center.y = pointsY[k]/50.0f -1;
-    fragments[k].center.z = 0;
+    fragments[k].center.z = depth/2;
 
     int str = 12*3; // 12*3 triangle point stride;
     int str2 = 12;
