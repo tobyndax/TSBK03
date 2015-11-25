@@ -29,7 +29,7 @@ void initObj(){
     printf("%f \n",fragments[i].center.y);
     objs[i].mass = 1.0f;
     objs[i].radius = fragments[i].radius;
-    objs[i].Pos = SetVector(0.0f, 50.0f,0.0f);
+    objs[i].Pos = SetVector(0.0f, 50.0f,fragments[i].center.z);
     objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
     objs[i].Rot = IdentityMatrix();
     float s = pow(cBallSize,2)*objs[i].mass/3;
@@ -52,7 +52,7 @@ void initObj(){
   {
     vec3 r;
     float imp;
-    dT = 0.01f;
+    dT = 0.005f;
     int numObjs = fragments[0].numFragments;
     if(firstTime){
       initObj();
@@ -64,31 +64,37 @@ void initObj(){
       objs[i].T = SetVector(0,0,0);
     }
 
-    GLfloat minYt = 0.0f;
     // Wall tests
     for (int i = 0; i < numObjs; i++)
     {
 
       if (objs[i].Pos.y <= objs[i].radius){
-        GLint minYindex = 0;
-        GLfloat minY = 1000000;
+        vec3 minYpoint = {0,0,0};
+        GLfloat minY = 1000.0f;
         for(int k = 0;k < fragments[i].numOnHull;k++){
-          GLfloat tempY = (fragments[i].pointsOnHull)[3*k+1]-2.0f;
+          vec3 point = SetVector(fragments[i].pointsOnHull[3*k+0],fragments[i].pointsOnHull[3*k+1],fragments[i].pointsOnHull[3*k+2]);
+          point = MultVec3(objs[i].Rot,point);
+
+          GLfloat tempY = point.y;
           if(tempY<minY){
-            minYindex = k;
+            minYpoint = point;
             minY = tempY;
-            minYt = minY;
           }
         }
+        minY = fragments[i].center.y - abs(minY);
 
-        if (objs[i].Pos.y+minY <= 0.0f){
-          if(i==1){
-              printf("%s%f\n", "minY: ", minY);
-              printf("%s%f\n", "pos.Y: ",objs[i].Pos.y);
-              printf("%s%f\n", "pos.Y+minY: ",objs[i].Pos.y+minY);
-          }
-          objs[i].Pos.y = -minY;
+        // this below does not work, using wrong coord system.
+        if (objs[i].Pos.y - minY <= 0.0f && i == 0){
+          printf("minY %f \n",minY);
+          printf("PosY: %f \n",objs[i].Pos.y);
+          objs[i].Pos.y = -abs(minY);
           objs[i].LinMom.y = 0.5f*abs(objs[i].LinMom.y);
+          vec3 r = minYpoint;
+          printf("Rvec: %f %f %f \n",r.x ,r.y,r.z);
+          printf("Object:  %f %f %f \n",objs[i].Pos.x ,objs[i].Pos.y,objs[i].Pos.z);
+          r = ScalarMult(VectorSub(r,objs[i].Pos),1.0f/(pow(100,2)));
+          vec3 upF = SetVector(0.0f,9.82f,0.0f);
+          objs[i].T = CrossProduct(r,upF);
         }
       }
       objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
@@ -169,8 +175,7 @@ for (int i = 0; i < numObjs; i++)
   mat4 Rd;
   vec3 up = SetVector(0,1,0);
   // Note: omega is not set. How do you calculate it?
-  vec3 rot_axis = CrossProduct(up, objs[i].LinMom);
-  objs[i].omega = ScalarMult(rot_axis, 1.0/(objs[i].mass*objs[i].radius));
+  objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
   //		v := P * 1/mass
   objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
 
@@ -462,7 +467,7 @@ struct Fragment* mainVoronoi(int numPoints){
     vec3 cent;
     cent.x = pointsX[k];
     cent.y = pointsY[k];
-    cent.z = 0;
+    cent.z = depth/2;
 
     fragments[k].numOnHull = pointsOnHullX[0][k]-1;
     GLfloat* tempPointsOnHull = malloc(sizeof(GLfloat)*3*pointsOnHullX[0][k]);
@@ -624,17 +629,19 @@ GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
   glUseProgram(objectProgram);
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-  for (int k = 0; k < fragments[0].numFragments; k++) {
-
+  //for (int k = 0; k < fragments[0].numFragments; k++) {
+  int k = 0;
     //mat4 voroToRend = Mult(T(-1,-1,0),S(1.0f,1.0f,1));
     //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
     //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
+    mat4 rot = Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),Mult(objs[k].Rot,T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z)));
     mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(objs[k].Pos.x,objs[k].Pos.y-50.0f,objs[k].Pos.z)));
-    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+    mat4 tot = Mult(trans2,rot);
+    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, tot.m);
 
     DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
 
-  }
+//  }
 
   return timeScale;
 }
