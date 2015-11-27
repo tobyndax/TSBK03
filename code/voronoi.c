@@ -29,7 +29,7 @@ void initObj(){
     printf("%f \n",fragments[i].center.y);
     objs[i].mass = 1.0f;
     objs[i].radius = fragments[i].radius;
-    objs[i].Pos = SetVector(0.0f, 50.0f,fragments[i].center.z);
+    objs[i].Pos = SetVector(fragments[i].center.x,fragments[i].center.y,fragments[i].center.z);
     objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
     objs[i].Rot = IdentityMatrix();
     float s = pow(cBallSize,2)*objs[i].mass/3;
@@ -64,42 +64,54 @@ void initObj(){
       objs[i].T = SetVector(0,0,0);
     }
 
-    // Wall tests
+    // ground tests,
     for (int i = 0; i < numObjs; i++)
     {
-
+      vec3 lCenter = fragments[i].center;
       if (objs[i].Pos.y <= objs[i].radius){
+        //for each point on the convex hull
         vec3 minYpoint = {0,0,0};
         GLfloat minY = 1000.0f;
+        GLfloat minYDist = 0.0f;
+        GLfloat secondSmallest = 0.0f;
         for(int k = 0;k < fragments[i].numOnHull;k++){
-          vec3 point = SetVector(fragments[i].pointsOnHull[3*k+0],fragments[i].pointsOnHull[3*k+1],fragments[i].pointsOnHull[3*k+2]);
-          point = MultVec3(objs[i].Rot,point);
+          //Take point on hull.
 
-          GLfloat tempY = point.y;
-          if(tempY<minY){
+          vec3 point = SetVector(fragments[i].pointsOnHull[3*k+0],fragments[i].pointsOnHull[3*k+1],fragments[i].pointsOnHull[3*k+2]);
+          //However, this point is in the global system. So move it with center before rotating.
+          point = VectorSub(point,lCenter);
+          //Since this point is relative to the origin we can rotate it.
+          point = MultVec3(objs[i].Rot,point);
+          //The point should now be moved to the coordinate system of Pos.
+          point = VectorAdd(objs[i].Pos,point);
+          //now find the point with the smallest y value in this env.
+          if(minY > point.y){
+            minY = point.y;
             minYpoint = point;
-            minY = tempY;
+          }
+          if (minYpoint.y <= -50.0f){// && i == 0){
+            printf("minY %f \n",minYDist);
+            printf("PosY: %f \n",objs[i].Pos.y);
+            objs[i].Pos.y += 0.1f;
+            objs[i].LinMom.y = 0.8f*abs(objs[i].LinMom.y);
+            vec3 r = minYpoint;
+            printf("Rvec: %f %f %f \n",r.x ,r.y,r.z);
+            printf("Object:  %f %f %f \n",objs[i].Pos.x ,objs[i].Pos.y,objs[i].Pos.z);
+            r = ScalarMult(VectorSub(r,objs[i].Pos),1.0f/(pow(100,2)));
+            //this should be a function of linmom and rotational speed. (i.e. speed of corner point int y dir)
+            //Currently on based on linMom i.e. infinite rotations.
+            GLfloat yForce = objs[i].LinMom.y;
+            vec3 upF = SetVector(0.0f,yForce,0.0f);
+            objs[i].T = CrossProduct(r,upF);
           }
         }
-        minY = fragments[i].center.y - abs(minY);
-
         // this below does not work, using wrong coord system.
-        if (objs[i].Pos.y - minY <= 0.0f && i == 0){
-          printf("minY %f \n",minY);
-          printf("PosY: %f \n",objs[i].Pos.y);
-          objs[i].Pos.y = -abs(minY);
-          objs[i].LinMom.y = 0.5f*abs(objs[i].LinMom.y);
-          vec3 r = minYpoint;
-          printf("Rvec: %f %f %f \n",r.x ,r.y,r.z);
-          printf("Object:  %f %f %f \n",objs[i].Pos.x ,objs[i].Pos.y,objs[i].Pos.z);
-          r = ScalarMult(VectorSub(r,objs[i].Pos),1.0f/(pow(100,2)));
-          vec3 upF = SetVector(0.0f,9.82f,0.0f);
-          objs[i].T = CrossProduct(r,upF);
-        }
+
       }
       objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
     }
     //Collision tests
+    /*
     for (int i = 0; i < numObjs; i++) {
       for (int j = i+1 ; j < numObjs; j++) {
         r = VectorSub(objs[i].Pos,objs[j].Pos);
@@ -126,7 +138,7 @@ void initObj(){
 
                 objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].LinMom);
                 objs[j].omega = MultMat3Vec3(InvertMat3(objs[j].I),objs[j].LinMom);
-                */
+
               }
             }
           }
@@ -160,9 +172,9 @@ void initObj(){
   ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
 }
 }
-*/
-}
 
+}
+*/
 
 // Update state, follows the book closely
 for (int i = 0; i < numObjs; i++)
@@ -629,19 +641,19 @@ GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
   glUseProgram(objectProgram);
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-  //for (int k = 0; k < fragments[0].numFragments; k++) {
-  int k = 0;
+  for (int k = 0; k < fragments[0].numFragments; k++) {
+  //int k = 0;
     //mat4 voroToRend = Mult(T(-1,-1,0),S(1.0f,1.0f,1));
     //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
     //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
-    mat4 rot = Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),Mult(objs[k].Rot,T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z)));
-    mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(objs[k].Pos.x,objs[k].Pos.y-50.0f,objs[k].Pos.z)));
+    mat4 rot = Mult(objs[k].Rot,T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z));
+    mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z)));
     mat4 tot = Mult(trans2,rot);
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, tot.m);
 
     DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
 
-//  }
+  }
 
   return timeScale;
 }
