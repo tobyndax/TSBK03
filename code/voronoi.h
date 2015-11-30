@@ -38,6 +38,7 @@ struct PhysicsObj
 	vec3 omega; // Angular velocity
 	vec3 v; // Change in velocity
 	mat3 I;  // Inertia
+  mat3 InvI; //Inverse inertia
 
   GLfloat radius;
 };

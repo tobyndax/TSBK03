@@ -8,7 +8,7 @@
 #include "mac/MicroGlut.h"
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-
+int segment = 0;
 float ELASTICITY = 1.0f;
 
 struct Fragment* fragments;
@@ -34,6 +34,7 @@ void initObj(){
     objs[i].Rot = IdentityMatrix();
     float s = pow(cBallSize,2)*objs[i].mass/3;
     objs[i].I = mat4tomat3(S(s,s,s));
+    objs[i].InvI = InvertMat3(objs[i].I);
   }
   GLint numPoints = fragments[0].numFragments;
   models = malloc(numPoints*sizeof(Model*));
@@ -89,20 +90,36 @@ void initObj(){
             minY = point.y;
             minYpoint = point;
           }
-          if (minYpoint.y <= -50.0f){// && i == 0){
-            printf("minY %f \n",minYDist);
+          if (minYpoint.y <= -50.0f && i == segment){// && i == 0){
             printf("PosY: %f \n",objs[i].Pos.y);
-            objs[i].Pos.y += 0.1f;
+            GLfloat penetration =-50.0f - minYpoint.y;
+            printf("pen: %f \n",penetration);
             objs[i].LinMom.y = 0.8f*abs(objs[i].LinMom.y);
+
+            vec3 v = objs[i].LinMom;
+
+            //		X := X + v*dT
+            vec3 dPos = ScalarMult(v, dT); // dX := v*dT
+            printf("dPos : %f \n",dPos.y);
+            vec3 Pos = VectorAdd(objs[i].Pos, dPos); // X := X + dX
+            printf("Pos Y : %f  Pos Y object : %f \n",Pos.y,objs[i].Pos.y);
+            float diff = Pos.y-objs[i].Pos.y;
+            if (diff < 0 )
+            diff = -diff;
+            printf("pen: %f \n",diff);
+
+
+            if(penetration-diff > 0.00001f){
+              objs[i].Pos.y += (penetration-diff);
+            }
+
             vec3 r = minYpoint;
             printf("Rvec: %f %f %f \n",r.x ,r.y,r.z);
             printf("Object:  %f %f %f \n",objs[i].Pos.x ,objs[i].Pos.y,objs[i].Pos.z);
             r = ScalarMult(VectorSub(r,objs[i].Pos),1.0f/(pow(100,2)));
-            //this should be a function of linmom and rotational speed. (i.e. speed of corner point int y dir)
-            //Currently on based on linMom i.e. infinite rotations.
-            GLfloat yForce = objs[i].LinMom.y;
-            vec3 upF = SetVector(0.0f,yForce,0.0f);
-            objs[i].T = CrossProduct(r,upF);
+            vec3 vp = VectorAdd(objs[i].v,CrossProduct(objs[i].omega,r));
+
+            objs[i].T = CrossProduct(r,ScalarMult(vp,-0.1f/0.005f*dT));
           }
         }
         // this below does not work, using wrong coord system.
@@ -113,63 +130,63 @@ void initObj(){
     //Collision tests
     /*
     for (int i = 0; i < numObjs; i++) {
-      for (int j = i+1 ; j < numObjs; j++) {
-        r = VectorSub(objs[i].Pos,objs[j].Pos);
-        if( Norm(r) < objs[i].radius + objs[j].radius){
+    for (int j = i+1 ; j < numObjs; j++) {
+    r = VectorSub(objs[i].Pos,objs[j].Pos);
+    if( Norm(r) < objs[i].radius + objs[j].radius){
 
-          //should be for every point on hull not numVertices
-          for(int k = 0;k < fragments[i].numOnHull;k++){
-            for(int l = 0;l < fragments[j].numOnHull;l++){
+    //should be for every point on hull not numVertices
+    for(int k = 0;k < fragments[i].numOnHull;k++){
+    for(int l = 0;l < fragments[j].numOnHull;l++){
 
-              vec3 radiusi = ScalarMult(VectorSub(SetVector((fragments[i].pointsOnHull)[3*k],(fragments[i].pointsOnHull)[3*k+1],(fragments[i].pointsOnHull)[3*k+2]),objs[i].Pos),0.5);
-              vec3 radiusj = ScalarMult(VectorSub(SetVector((fragments[j].pointsOnHull)[3*l],(fragments[j].pointsOnHull)[3*l+1],(fragments[j].pointsOnHull)[3*l+2]),objs[j].Pos),0.5);
-              vec3 radiusd = VectorSub(VectorAdd(objs[i].Pos,radiusi),VectorAdd(objs[j].Pos,radiusj));
+    vec3 radiusi = ScalarMult(VectorSub(SetVector((fragments[i].pointsOnHull)[3*k],(fragments[i].pointsOnHull)[3*k+1],(fragments[i].pointsOnHull)[3*k+2]),objs[i].Pos),0.5);
+    vec3 radiusj = ScalarMult(VectorSub(SetVector((fragments[j].pointsOnHull)[3*l],(fragments[j].pointsOnHull)[3*l+1],(fragments[j].pointsOnHull)[3*l+2]),objs[j].Pos),0.5);
+    vec3 radiusd = VectorSub(VectorAdd(objs[i].Pos,radiusi),VectorAdd(objs[j].Pos,radiusj));
 
-              //collision
-              if( Norm(radiusd) < Norm(radiusi) + Norm(radiusj)){
-                /*
-                objs[i].Pos = VectorAdd(objs[i].Pos, ScalarMult(VectorSub(objs[i].Pos,objs[j].Pos),0.00006f));
-                objs[j].Pos = VectorAdd(objs[j].Pos, ScalarMult(VectorSub(objs[j].Pos,objs[i].Pos),0.00006f));
-                */
-                /*
-                imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
-                objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
-                objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
+    //collision
+    if( Norm(radiusd) < Norm(radiusi) + Norm(radiusj)){
+    /*
+    objs[i].Pos = VectorAdd(objs[i].Pos, ScalarMult(VectorSub(objs[i].Pos,objs[j].Pos),0.00006f));
+    objs[j].Pos = VectorAdd(objs[j].Pos, ScalarMult(VectorSub(objs[j].Pos,objs[i].Pos),0.00006f));
+    */
+    /*
+    imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
+    objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
+    objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
 
-                objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].LinMom);
-                objs[j].omega = MultMat3Vec3(InvertMat3(objs[j].I),objs[j].LinMom);
+    objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].LinMom);
+    objs[j].omega = MultMat3Vec3(InvertMat3(objs[j].I),objs[j].LinMom);
 
-              }
-            }
-          }
-        }
-      }
-      /*
-      for (int i = 0; i < numObjs; i++)
-      {
-      vec3 r = SetVector(0.0,objs[i].radius/2,0.0);
-      objs[i].AngMom = CrossProduct(r,objs[i].LinMom);
-      objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
-
-      vec3 vContact = VectorAdd(ScalarMult(objs[i].omega,objs[i].radius),objs[i].v);
-      if(Norm(objs[i].v)>0){
-      vec3 n = Normalize(objs[i].v);
-      objs[i].F = VectorAdd(objs[i].F,ScalarMult(n,-DotProduct(n,objs[i].LinMom)*0.2f));
-    }
   }
-  */
+}
+}
+}
+}
+/*
+for (int i = 0; i < numObjs; i++)
+{
+vec3 r = SetVector(0.0,objs[i].radius/2,0.0);
+objs[i].AngMom = CrossProduct(r,objs[i].LinMom);
+objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
+
+vec3 vContact = VectorAdd(ScalarMult(objs[i].omega,objs[i].radius),objs[i].v);
+if(Norm(objs[i].v)>0){
+vec3 n = Normalize(objs[i].v);
+objs[i].F = VectorAdd(objs[i].F,ScalarMult(n,-DotProduct(n,objs[i].LinMom)*0.2f));
+}
+}
+*/
 
 
-  /*
-  for (i = 0; i < kNumBalls; i++)
-  {
-  vec3 r = SetVector(0.0,kBallSize/2,0.0);
-  ball[i].L = CrossProduct(r,ball[i].P);
-  ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
+/*
+for (i = 0; i < kNumBalls; i++)
+{
+vec3 r = SetVector(0.0,kBallSize/2,0.0);
+ball[i].L = CrossProduct(r,ball[i].P);
+ball[i].omega = MultMat3Vec3(InvertMat3(ball[i].I),ball[i].L);
 
-  if(Norm(ball[i].v)>0){
-  vec3 n = Normalize(ball[i].v);
-  ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
+if(Norm(ball[i].v)>0){
+vec3 n = Normalize(ball[i].v);
+ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
 }
 }
 
@@ -182,6 +199,9 @@ for (int i = 0; i < numObjs; i++)
 
   objs[i].LinMom.x *= 0.99;
   objs[i].LinMom.z *= 0.99;
+  objs[i].AngMom.x *= 0.98f;
+  objs[i].AngMom.y *= 0.98f;
+  objs[i].AngMom.z *= 0.98f;
 
   vec3 dPos, dLinMom, dAngMom, dO;
   mat4 Rd;
@@ -641,19 +661,19 @@ GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
   glUseProgram(objectProgram);
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-  for (int k = 0; k < fragments[0].numFragments; k++) {
-  //int k = 0;
-    //mat4 voroToRend = Mult(T(-1,-1,0),S(1.0f,1.0f,1));
-    //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
-    //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
-    mat4 rot = Mult(objs[k].Rot,T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z));
-    mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z)));
-    mat4 tot = Mult(trans2,rot);
-    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, tot.m);
+  //for (int k = 0; k < fragments[0].numFragments; k++) {
+  int k = segment;
+  //mat4 voroToRend = Mult(T(-1,-1,0),S(1.0f,1.0f,1));
+  //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
+  //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
+  mat4 rot = Mult(objs[k].Rot,T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z));
+  mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z)));
+  mat4 tot = Mult(trans2,rot);
+  glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, tot.m);
 
-    DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
+  DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
 
-  }
+  //}
 
   return timeScale;
 }
