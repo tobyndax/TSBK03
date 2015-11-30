@@ -35,6 +35,7 @@ void initObj(){
     float s = pow(cBallSize,2)*objs[i].mass/3;
     objs[i].I = mat4tomat3(S(s,s,s));
     objs[i].InvI = InvertMat3(objs[i].I);
+    objs[i].AngMom.x = 0.00005f;
   }
   GLint numPoints = fragments[0].numFragments;
   models = malloc(numPoints*sizeof(Model*));
@@ -75,6 +76,8 @@ void initObj(){
         GLfloat minY = 1000.0f;
         GLfloat minYDist = 0.0f;
         GLfloat secondSmallest = 0.0f;
+
+        bool once = true;
         for(int k = 0;k < fragments[i].numOnHull;k++){
           //Take point on hull.
 
@@ -86,40 +89,29 @@ void initObj(){
           //The point should now be moved to the coordinate system of Pos.
           point = VectorAdd(objs[i].Pos,point);
           //now find the point with the smallest y value in this env.
-          if(minY > point.y){
-            minY = point.y;
-            minYpoint = point;
-          }
-          if (minYpoint.y <= -50.0f && i == segment){// && i == 0){
-            printf("PosY: %f \n",objs[i].Pos.y);
-            GLfloat penetration =-50.0f - minYpoint.y;
-            printf("pen: %f \n",penetration);
-            objs[i].LinMom.y = 0.8f*abs(objs[i].LinMom.y);
 
-            vec3 v = objs[i].LinMom;
-
-            //		X := X + v*dT
-            vec3 dPos = ScalarMult(v, dT); // dX := v*dT
-            printf("dPos : %f \n",dPos.y);
-            vec3 Pos = VectorAdd(objs[i].Pos, dPos); // X := X + dX
-            printf("Pos Y : %f  Pos Y object : %f \n",Pos.y,objs[i].Pos.y);
-            float diff = Pos.y-objs[i].Pos.y;
-            if (diff < 0 )
-            diff = -diff;
-            printf("pen: %f \n",diff);
-
-
-            if(penetration-diff > 0.00001f){
-              objs[i].Pos.y += (penetration-diff);
+          if (point.y <= -50.0f && i == segment){// && i == 0){
+            vec3 n = SetVector(0,1,0);
+            vec3 r = VectorSub(point,objs[i].Pos);
+            vec3 rxn = CrossProduct(r,n);
+            if(once){
+            objs[i].LinMom.y = 0.75f*fabsf(objs[i].LinMom.y);
+            objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
+            once = false;
             }
 
-            vec3 r = minYpoint;
-            printf("Rvec: %f %f %f \n",r.x ,r.y,r.z);
-            printf("Object:  %f %f %f \n",objs[i].Pos.x ,objs[i].Pos.y,objs[i].Pos.z);
-            r = ScalarMult(VectorSub(r,objs[i].Pos),1.0f/(pow(100,2)));
-            vec3 vp = VectorAdd(objs[i].v,CrossProduct(objs[i].omega,r));
+            float t1 = DotProduct(objs[i].v,n);
+            float t2 = DotProduct(rxn,objs[i].omega);
+            float t3 = 1.0f;
+            float t4 = DotProduct(rxn,MultMat3Vec3(objs[i].InvI,rxn));
+            float Jmag = fabsf((t1+t2)/(t3+t4) * -(1 + ELASTICITY));
+            printf("Jmag: %f \n",Jmag);
+            objs[i].LinMom = VectorAdd(ScalarMult(n,Jmag),objs[i].LinMom);
 
-            objs[i].T = CrossProduct(r,ScalarMult(vp,-0.1f/0.005f*dT));
+            objs[i].T = CrossProduct(r,ScalarMult(n,Jmag));
+
+            printf("%f \n",objs[i].LinMom.y);
+
           }
         }
         // this below does not work, using wrong coord system.
@@ -197,8 +189,9 @@ ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
 for (int i = 0; i < numObjs; i++)
 {
 
-  objs[i].LinMom.x *= 0.99;
-  objs[i].LinMom.z *= 0.99;
+  objs[i].LinMom.x *= 0.99f;
+  objs[i].LinMom.z *= 0.99f;
+
   objs[i].AngMom.x *= 0.98f;
   objs[i].AngMom.y *= 0.98f;
   objs[i].AngMom.z *= 0.98f;
@@ -208,6 +201,10 @@ for (int i = 0; i < numObjs; i++)
   vec3 up = SetVector(0,1,0);
   // Note: omega is not set. How do you calculate it?
   objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
+
+  objs[i].omega.x *=100.0f;
+  objs[i].omega.y *=5.0f;
+  objs[i].omega.z *=5.0f;
   //		v := P * 1/mass
   objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
 
@@ -667,7 +664,7 @@ GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
   //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
   //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
   mat4 rot = Mult(objs[k].Rot,T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z));
-  mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z)));
+  mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f/50.0f),T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z)));
   mat4 tot = Mult(trans2,rot);
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, tot.m);
 
