@@ -1,0 +1,125 @@
+\documentclass[10pt]{article}
+
+\usepackage{times}
+\usepackage{mathptmx}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{placeins}
+\usepackage[inline]{enumitem}
+\usepackage[margin=1.0in]{geometry}
+
+\setlength\parindent{0pt}
+
+\raggedbottom
+\sloppy
+
+\title{Computer Graphics\\
+\emph{TSBK03}}
+
+\author{David Habrman \\ davha227, 920908-2412\\
+Jens Edhammer \\ jened502, 920128-5112 }
+
+\date{\today}
+\begin{document}
+
+\maketitle
+
+\newpage
+\newpage
+
+\section{Introduction}
+
+This project aims was to implement Voronoi shattering. The two lists below
+are from the project specification and shows which features had to be
+implemented (will do) and which features were optional (might do).
+The features have a tag, [done], if they were implemented.
+
+\subsection{Features}
+
+Will do:
+\begin{itemize}
+  \item Light model \hfill \\
+  Implementation of Phong-shading. [done]
+  \item Test area \hfill \\
+  A simple floor that objects can fall on/rest on. [done]
+  \item Gravitiy simulation \hfill \\
+  Make object fall to the ground.
+  \item Collision detection with ground \hfill \\
+  Detect when objects hit the ground. [done]
+  \item Collision detection between objects \hfill \\
+  Detect when objects collide with each other. [done]
+  \item Collision response with ground \hfill \\
+  Make objects respond properly when hit the ground.
+  \item Collision response between objects \hfill \\
+  Make objects respond properly when colliding with each other.
+  \item Skybox [done]
+  \item Camera controls \hfill \\
+  Keyboard and mouse movement controls (direction of camera). [done]
+  \item Voronoi shattering for a simple 2D object \hfill \\
+  Shatter a 2D square. [done]
+  \item Voronoi shattering for a simple 2D wood object \hfill \\
+  Shatter a 2D square and make it look like wooden splinters. [done]
+  \item Voronoi shattering for a simple 3D object \hfill \\
+  Shatter a 3D cube. [partially done?]
+  \item Voronoi shattering for a simple 3D wood object \hfill \\
+  Shatter a 3D cube and make it look like wooden splinters. [partially done?]
+
+\end{itemize}
+
+
+
+Might do:
+\begin{itemize}
+
+  \item Indoor test environment \hfill \\
+  Create a room for visual effect.
+  \item Indoor lighting
+  \item Voronoi shattering for a simple 3D wood object \hfill \\
+  Change distance metric to implement wood like splinters. [partially done?]
+  \item Voronoi shattering for two simple 3D objects colliding \hfill \\
+  One object may be ”harder” and will not break.
+  \item Voronoi shattering for a complex object.
+  \item Convex collision detection \hfill \\
+  Collision detection for convex objects. [done]
+
+\end{itemize}
+
+\section{Background information}
+\subsection{Voronoi shattering}
+This is a non physical way of shattering objects. The idéa is to create a
+seed pattern inside the object you want to shatter. This pattern is then used
+to create fragments from the original object. The original object is split
+in the middle of each seed point giving rise to one fragment for each
+seed. The pattern can have different appearance depending on how you want your
+fragments to look. A uniform seed pattern will give uniform fragments but if
+you, for example, have a bullet hitting glass you want smaller fragments near
+the impact point and larger fragments further away. This can be achieved by
+choosing a non-uniform seed pattern with more and closer seeds near the impact
+point and less sparser points further away.
+
+\subsection{Collision detection}
+
+\subsection{Collision response}
+
+
+\FloatBarrier
+
+
+\newpage
+\section{About our implementation}
+\subsection{Voronoi shattering}
+
+\subsection{Collision detection}
+
+\subsection{Collision response}
+
+\section{Interesting problems}
+
+\section{Limitations}
+
+\section{Conclusion}
+
+\end{document}
