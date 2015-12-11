@@ -91,14 +91,65 @@ Might do:
 \subsection{Voronoi shattering}
 This is a non physical way of shattering objects. The idéa is to create a
 seed pattern inside the object you want to shatter. This pattern is then used
-to create fragments from the original object. The original object is split
-in the middle of each seed point giving rise to one fragment for each
-seed. The pattern can have different appearance depending on how you want your
+to create fragments from the original object. The original object is split using
+a form of nearest neighbor. Lines are drawn at the maximum distance from each
+point giving rise to a pattern as in figure \ref{fig:normPattern}. The object
+is then split along these lines giving rise to one fragment for each seed.
+The pattern can have different appearance depending on how you want your
 fragments to look. A uniform seed pattern will give uniform fragments but if
 you, for example, have a bullet hitting glass you want smaller fragments near
 the impact point and larger fragments further away. This can be achieved by
 choosing a non-uniform seed pattern with more and closer seeds near the impact
 point and less sparser points further away.
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.8\textwidth]{images/normPattern.jpg}
+    \caption{Voronoi fragments using a random normal distributed pattern}
+    \label{fig:normPattern}
+\end{figure}
+
+\subsubsection{Seed pattern}
+As mentioned above the seed pattern can be a powerful tool to make objects
+shatter the way you want. Voronoi shattering is not based on physics which is
+why it's important to know how to make the fragments look the way you want.
+A wooden object, for example, doesn't shatter the same way as a ceramic object
+would. The basic implementation of Voronoi shattering is specially useful for
+materials as ceramic and glass since it looks very realistic.
+
+Let's shatter a 2D square. A uniform pattern would result in uniform fragments
+as in figure \ref{fig:uniPattern}. This is probably not a pattern you would
+want to use when shattering object. Let's say that the square is made out of
+glass. Using a pattern with random normal distributed points as in figure
+\ref{fig:normPattern} we get fragment suitable for shattering glass. To
+illustrate the power of seed pattern further let's shatter a square made out
+of wood. Wood shatters in splinters along the fiber direction. The seed pattern
+can be used to give a square the illusion of having a vertical fiber direction.
+Using a random pattern that is more sparse in the vertical direction and more
+compact in the horizontal direction we get the pattern in figure \ref{fig:woodPattern}.
+This pattern can be further manipulated to get longer more slim splinters.
+
+Usually we also have a impact point. Fragment near the impact point are usually
+smaller than fragments further away. As mentioned above this can be achieved
+by choosing a non-uniform seed pattern with more and closer seeds near the impact
+point and less sparser points further away.
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.8\textwidth]{images/uniPattern.jpg}
+    \caption{Voronoi fragments using uniform pattern}
+    \label{fig:uniPattern}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.8\textwidth]{images/woodPattern.jpg}
+    \caption{Voronoi fragments using a pattern suitable for shattering wood}
+    \label{fig:woodPattern}
+\end{figure}
+
+
+\subsubsection{Voronoi implementation}
 
 \subsection{Collision detection}
 
@@ -111,14 +162,21 @@ point and less sparser points further away.
 \newpage
 \section{About our implementation}
 \subsection{Voronoi shattering}
+Naive and slow implementation but it works.
 
 \subsection{Collision detection}
+Worked ok?
 
 \subsection{Collision response}
+Didn't work, why not?
 
 \section{Interesting problems}
+Collision response proved to be a difficult problem. The detection part was somewhat
+simple. We managed to detect collision with the ground as well as collision with
+other objects.
 
 \section{Limitations}
+Can't shatter object, only a square. Can't do 3D, we have 2,5D.
 
 \section{Conclusion}
 
