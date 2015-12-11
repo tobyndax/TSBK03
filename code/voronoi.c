@@ -17,6 +17,7 @@ struct PhysicsObj* objs;
 float cBallSize = 0.1f;
 
 bool firstTime = true;
+vec3* dirs;
 
 void initObj(){
   int numObjs = fragments[0].numFragments;
@@ -34,7 +35,6 @@ void initObj(){
   }
   GLint numPoints = fragments[0].numFragments;
   models = malloc(numPoints*sizeof(Model*));
-  firstTime = false;
 
   for (int k = 0; k < fragments[0].numFragments; k++) {
     GLint verts = fragments[k].numVertices;
@@ -42,66 +42,6 @@ void initObj(){
       (fragments[k].vertices),fragments[k].normals, (fragments[k].texCoord), NULL,
       (fragments[k].indicies),verts, verts);
       vec3 curCenter = {((fragments[k].vertices))[0],((fragments[k].vertices))[1],((fragments[k].vertices))[2]};
-    }
-  }
-
-  void updateWorld(double dT)
-  {
-    dT = 0.01f;
-    int numObjs = fragments[0].numFragments;
-    if(firstTime){
-      initObj();
-    }
-    // Zero forces
-    int i, j;
-    for (i = 0; i < numObjs; i++)
-    {
-      objs[i].F = SetVector(0,-9.82f*objs[i].mass,0);
-      objs[i].T = SetVector(0,0,0);
-    }
-
-    // Wall tests
-    for (i = 0; i < numObjs; i++)
-    {
-      if (objs[i].Pos.y <= cBallSize){
-        objs[i].LinMom.y = 0.5*abs(objs[i].LinMom.y);
-      }
-      objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
-    }
-    //Collision tests
-    for (int i = 0; i < numObjs; i++) {
-    }
-
-    // Update state, follows the book closely
-    for (i = 0; i < numObjs; i++)
-    {
-      vec3 dPos, dLinMom, dAngMom, dO;
-      mat4 Rd;
-      vec3 up = SetVector(0,1,0);
-      // Note: omega is not set. How do you calculate it?
-      vec3 rot_axis = CrossProduct(up, objs[i].LinMom);
-      //ball[i].omega = ScalarMult(rot_axis, 1.0/(ball[i].mass*kBallSize));
-
-
-      //		v := P * 1/mass
-      objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
-
-      //		X := X + v*dT
-      dPos = ScalarMult(objs[i].v, dT); // dX := v*dT
-      objs[i].Pos = VectorAdd(objs[i].Pos, dPos); // X := X + dX
-      //		R := R + Rd*dT
-      dO = ScalarMult(objs[i].omega, dT); // dO := omega*dT
-      Rd = CrossMatrix(dO); // Calc dO, add to R
-      Rd = Mult(Rd, objs[i].Rot); // Rotate the diff (NOTE: This was missing in early versions.)
-      objs[i].Rot = MatrixAdd(objs[i].Rot, Rd);
-      //		P := P + F * dT
-      dLinMom = ScalarMult(objs[i].F, dT); // dP := F*dT
-      objs[i].LinMom = VectorAdd(objs[i].LinMom, dLinMom); // P := P + dP
-      //		L := L + t * dT
-      dAngMom = ScalarMult(objs[i].T, dT); // dL := T*dT
-      objs[i].AngMom = VectorAdd(objs[i].AngMom, dAngMom); // L := L + dL
-
-      OrthoNormalizeMatrix(&objs[i].Rot);
     }
   }
 
@@ -371,7 +311,7 @@ void initObj(){
     }
 
 
-    fragments = malloc(sizeof(struct Fragfment)*numPoints);
+    fragments = malloc(sizeof(struct Fragment)*numPoints);
     for (int k = 0; k < numPoints; k++) {
 
       GLfloat depth = 0.05f;
@@ -493,31 +433,67 @@ void initObj(){
     return fragments;
   }
 
+
   void testFragments(int k){
     struct Fragment curFrag = fragments[k];
     printf("%s\n", "-------------------------------------" );
     printf("%i \n",curFrag.numVertices);
-    for (int i = 0; i < curFrag.numVertices/3; i++) {
+    for (int i = 0; i < curFrag.numVertices; i++) {
       printf("Vertices: %f : %f : %f \n",((curFrag.vertices))[i*3 +0],((curFrag.vertices))[i*3 +1],((curFrag.vertices))[i*3 +2]);
     }
     for (int i = 0; i < curFrag.numIndices/3; i++) {
       printf("Indices %i : %i : %i \n",((curFrag.indicies))[i*3 +0],((curFrag.indicies))[i*3 +1],((curFrag.indicies))[i*3 +2]);
     }
-
   }
 
   GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
+    timeScale +=0.001f;
+    vec3 origCenter = {0,0,0};
+
     glUseProgram(objectProgram);
+
+    mat4 trans = T(100.0f,2.0f,85.0f);
+
+    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans.m);
     glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
+    int k = 99;
+    if(firstTime){
+      testFragments(k);
+      GLint numPoints = fragments[0].numFragments;
+      models = malloc(numPoints*sizeof(Model*));
+      dirs = malloc(numPoints*sizeof(vec3));
+      firstTime = false;
 
-    for (int k = 0; k < fragments[0].numFragments; k++) {
-      mat4 trans2 = T(objs[k].Pos.x-fragments[k].center.x,objs[k].Pos.y-fragments[k].center.y,objs[k].Pos.z-fragments[k].center.z);
+      for (int k = 0; k < fragments[0].numFragments; k++) {
+      GLint verts = fragments[k].numVertices;
+      models[k] = LoadDataToModel(
+        (fragments[k].vertices), fragments[k].normals, (fragments[k].texCoord), NULL,
+        (fragments[k].indicies),verts, verts);
+        vec3 curCenter = {((fragments[k].vertices))[0],((fragments[k].vertices))[1],((fragments[k].vertices))[2]};
 
-      glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+        dirs[k] = VectorSub(curCenter,origCenter);
 
-      DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
+        vec3 dir = ScalarMult(dirs[k],timeScale);
 
+        mat4 trans2 = Mult(T(dir.x,dir.y,dir.z),trans);
+
+        glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+
+        DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
+        }
+      }else{
+          for (int k = 0; k < fragments[0].numFragments; k++) {
+        vec3 dir = ScalarMult(dirs[k],timeScale);
+
+        mat4 trans2 = Mult(T(dir.x,dir.y,dir.z),trans);
+
+        glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, trans2.m);
+
+        DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
+
+        }
+      }
+
+
+      return timeScale;
     }
-
-    return timeScale;
-  }

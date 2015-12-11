@@ -39,6 +39,7 @@ extern mat4 projectionMatrix;
 
 extern GLfloat square[];
 extern GLfloat squareTexCoord[];
+extern GLfloat squareNormal[];
 
 extern bool firstBillboard;
 extern bool hasMoved;
