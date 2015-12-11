@@ -50,11 +50,11 @@ Will do:
   \item Collision detection with ground \hfill \\
   Detect when objects hit the ground. [done]
   \item Collision detection between objects \hfill \\
-  Detect when objects collide with each other. [done]
+  Detect when objects collide with eachother. [done]
   \item Collision response with ground \hfill \\
   Make objects respond properly when hit the ground.
   \item Collision response between objects \hfill \\
-  Make objects respond properly when colliding with each other.
+  Make objects respond properly when colliding with eachother.
   \item Skybox [done]
   \item Camera controls \hfill \\
   Keyboard and mouse movement controls (direction of camera). [done]
@@ -88,6 +88,11 @@ Might do:
 \end{itemize}
 
 \section{Background information}
+This project aims to implement Voronoi shattering. Shattering an object is one
+part of the project while the other part is collision detection and response.
+The collision part is used to make the fragments of the shattered object react
+properly with eachother.
+
 \subsection{Voronoi shattering}
 This is a non physical way of shattering objects. The idéa is to create a
 seed pattern inside the object you want to shatter. This pattern is then used
@@ -104,7 +109,7 @@ point and less sparser points further away.
 
 \begin{figure}
     \centering
-    \includegraphics[width = 0.8\textwidth]{images/normPattern.jpg}
+    \includegraphics[width = 0.5\textwidth]{images/normPattern.jpg}
     \caption{Voronoi fragments using a random normal distributed pattern}
     \label{fig:normPattern}
 \end{figure}
@@ -134,26 +139,87 @@ smaller than fragments further away. As mentioned above this can be achieved
 by choosing a non-uniform seed pattern with more and closer seeds near the impact
 point and less sparser points further away.
 
+\subsection{Distance mapping}
+One way to achieve wood like shattering is to manipulate the seed pattern as
+mentioned above. Another way to do this is to scale the distance measurement
+in the direction of the fibers when creating the Voronoi pattern.
+Figure~\ref{fig:scaleDist} uses the same normal distributed pattern as
+figure~\ref{fig:normPattern} but it uses a scaled distance in the y-direction.
+It's scaled with a factor of SOME FACTOR.
+
 \begin{figure}
     \centering
-    \includegraphics[width = 0.8\textwidth]{images/uniPattern.jpg}
+    \includegraphics[width = 0.5\textwidth]{images/uniPattern.jpg}
     \caption{Voronoi fragments using uniform pattern}
     \label{fig:uniPattern}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width = 0.8\textwidth]{images/woodPattern.jpg}
+    \includegraphics[width = 0.5\textwidth]{images/woodPattern.jpg}
     \caption{Voronoi fragments using a pattern suitable for shattering wood}
     \label{fig:woodPattern}
 \end{figure}
 
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.5\textwidth]{images/scaleDist.jpg}
+    \caption{Voronoi fragments using a scaled distance in the y-direction}
+    \label{fig:scaleDist}
+\end{figure}
+
 
 \subsubsection{Voronoi implementation}
+The implementations is limited to shattering a cube with dynamic depth making
+it possible to shatter both a cube and plane. The implementations is also
+limited to "2.5D". With "2.5D" we mean that when shattering a cube we create a
+Voronoi pattern and use it to shatter the front as well as the back. The front
+and back are then connected with planes as illustrated in figure~\ref{fig:shatterConnect}
+The Voronoi implementations starts by generating a number of seed points with
+random normal distributed positions. The number of seed points is taken as an
+input argument to the function making it highly dynamic. A binary mask is created
+for each seed point showing what points in the square that belong to what fragment.
 
-\subsection{Collision detection}
+The next step is finding the convex hull of each fragment or more precisely
+the points on each fragment hull which are used to build the fragment. This is
+done with the gift wrapping algorithm ref to this https://en.wikipedia.org/wiki/Gift_wrapping_algorithm.
+This algorithm is based on a starting point on the hull, we use the point
+that we encounter first when scanning row by row in the fragments binary mask.
+This is the top most left point. The algorithm then procedes to create a line
+to a random point int the fragment. It then checks if any other point lies on
+the left side of the line. If this is the case then the point on the left side
+is used to create a new line with the starting point. The next point is the one
+where no points are on the left side of the line between the current point and
+the starting point. The next point is then used as starting point and the
+algorithm starts over. This continues until the algorithm reaches the point
+it started with.
 
-\subsection{Collision response}
+Lets call the starting point A, the current point that forms the line with
+the starting point is called B and the point for investigation is called C.
+Equation \ref{eq:leftOf} to find out if C lies on the lies on the left side
+of the line between B and A. Ax is the x position of point A, Ay is the
+y position of A and so on. If the equation returns a value less than 0 then
+C is to the left of the line, if it returns a value higher than 0 then C is on
+the right side and if it returns 0 then C is on the line. In the case of
+the equation returning 0 we want to use the point that is furthest away from A.
+
+\begin{equation}
+  \label{eq:leftOf}
+  (Bx-Ax)*(Cy-Ay)-(By-Ay)*(Cx-Ax)
+\end{equation}
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.5\textwidth]{images/shatterConnect.jpg}
+    \caption{Connection of fragment front and back}
+    \label{fig:shatterConnect}
+\end{figure}
+
+\subsection{Collision}
+
+\subsubsection{Collision detection}
+
+\subsubsection{Collision response}
 
 
 \FloatBarrier
