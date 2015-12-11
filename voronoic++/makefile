@@ -27,14 +27,13 @@ INC += -F/Library/Frameworks/
 LINKS =  -framework OpenGL -framework GLUT -framework Cocoa -framework SDL2 -L/usr/local/lib -Llib -lqu3e
 endif
 
-GCC = g++ -Wall -pedantic -std=c++0x -g3
+GCC = g++ -Wall -pedantic -std=c++11 -g3
 
 #if Linux
 ifeq ($(PLATFORM),linux)
 INC += $(shell pkg-config --cflags sdl2)
 LINKS = $(shell pkg-config --libs sdl2)
-LINKS += -lGL -lGLU -lglut -lm -lXt -lX11
-GCC += -std=gnu++0x
+LINKS += -lGL -lGLU -lglut -lm -lXt -lX11 -LlibLinux -lqu3e
 endif
 
 
