@@ -19,24 +19,68 @@ struct PhysicsObj* objs;
 float cBallSize = 0.025f;
 
 bool firstTime = true;
+//Calculates the mass center in relation to the seedpoint.
+vec3 calcMassCenter(int frag){
+  struct Fragment F = fragments[frag];
+  float mass = 1.0f/(float)F.numOnHull;
+  float xm =0.0f;
+  float ym =0.0f;
+  float zm =0.0f;
+  vec3 center = F.center;
+  for (int i = 0; i < F.numOnHull; i++) {
+    xm +=  mass*(F.pointsOnHull[i*3 +0]-center.x);
+    ym +=  mass*(F.pointsOnHull[i*3 +1]-center.y);
+    zm +=  mass*(F.pointsOnHull[i*3 +2]-center.z);
+  }
+  printf("center of mass: %f %f %f \n",xm,ym,zm);
+  return SetVector(xm,ym,zm);
+
+}
+
+mat3 calcI(int frag){
+  struct Fragment F = fragments[frag];
+  float mass = 1.0f/(float)F.numOnHull;
+  float Ixx =0.0f;
+  float Iyy =0.0f;
+  float Izz =0.0f;
+  float Ixy =0.0f;
+  float Ixz =0.0f;
+  float Iyz =0.0f;
+  float xd,yd,zd;
+  vec3 center = VectorAdd(F.center,objs[frag].massCenter);
+  for (int i = 0; i < F.numOnHull; i++) {
+    xd =  (F.pointsOnHull[i*3 +0]-center.x);
+    yd =  (F.pointsOnHull[i*3 +1]-center.y);
+    zd =  (F.pointsOnHull[i*3 +2]-center.z);
+    Ixx += mass*xd*xd;
+    Iyy += mass*yd*yd;
+    Izz += mass*zd*zd;
+    Ixz += mass*xd*zd;
+    Ixy += mass*xd*yd;
+    Iyz += mass*yd*zd;
+  }
+  float s2 = 1.0f;
+  mat3 I = mat4tomat3(S(s2/200.0f,s2/200.0f,s2/200.0f));
+  /*
+  I.m[0] = Ixx;
+  I.m[1] = -Ixy;
+  I.m[2] = -Ixz;
+  I.m[3] = -Ixy;
+  I.m[4] = Iyy;
+  I.m[5] = -Iyz;
+  I.m[6] = -Ixz;
+  I.m[7] = -Iyz;
+  I.m[8] = Izz;
+
+*/
+  return I;
+
+}
+
 
 void initObj(){
   int numObjs = fragments[0].numFragments;
-  objs = malloc(sizeof(struct PhysicsObj)*numObjs+1);
 
-  for (int i = 0; i < numObjs; i++)
-  {
-    printf("%f \n",fragments[i].center.y);
-    objs[i].mass = 1.0f;
-    objs[i].radius = fragments[i].radius;
-    objs[i].Pos = SetVector(fragments[i].center.x,fragments[i].center.y,fragments[i].center.z);
-    objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
-    objs[i].Rot = IdentityMatrix();
-    float s = pow(cBallSize,2)*objs[i].mass/3;
-    objs[i].I = mat4tomat3(S(s,s,s));
-    objs[i].InvI = InvertMat3(objs[i].I);
-    objs[i].AngMom.x = 0.00005f;
-  }
   GLint numPoints = fragments[0].numFragments;
   models = malloc(numPoints*sizeof(Model*));
   firstTime = false;
@@ -44,12 +88,33 @@ void initObj(){
   for (int k = 0; k < fragments[0].numFragments; k++) {
     GLint verts = fragments[k].numVertices;
     models[k] = LoadDataToModel(
-      (fragments[k].vertices),fragments[k].normals, (fragments[k].texCoord), NULL,
+      (fragments[k].vertices),fragments[k].normals,(fragments[k].texCoord), NULL,
       (fragments[k].indicies),verts, verts);
       vec3 curCenter = {((fragments[k].vertices))[0],((fragments[k].vertices))[1],((fragments[k].vertices))[2]};
     }
+
+    objs = malloc(sizeof(struct PhysicsObj)*(numObjs+1));
+
+
+    for (int i = 0; i < numObjs; i++)
+    {
+      printf("%f \n",fragments[i].center.y);
+      objs[i].mass = 1.0f;
+      objs[i].radius = fragments[i].radius;
+      objs[i].Pos = SetVector(fragments[i].center.x,fragments[i].center.y,fragments[i].center.z);
+      objs[i].LinMom = SetVector(0.0, 0.0, 0.0);
+      objs[i].Rot = IdentityMatrix();
+      objs[i].massCenter = calcMassCenter(i);
+      objs[i].I = calcI(i);
+      objs[i].InvI = InvertMat3(objs[i].I);
+      objs[i].gravity = 10.0f;
+      //objs[i].AngMom.x = 0.0005f;
+      //objs[i].AngMom.y = 0.0005f;
+    }
+
   }
 
+  bool push =true;
   void updateWorld(double dT)
   {
     vec3 r;
@@ -62,10 +127,13 @@ void initObj(){
     // Zero forces
     for (int i = 0; i < numObjs; i++)
     {
-      objs[i].F = SetVector(0,-9.82f*objs[i].mass * 100.0f,0);
+      objs[i].F = SetVector(0,-objs[i].gravity * 100.0f,0);
       objs[i].T = SetVector(0,0,0);
+      if(push){
+        objs[i].F = SetVector(0,0,-objs[i].gravity * 10.0f*(i%4));
+      }
     }
-
+    push = false;
     // ground tests,
     for (int i = 0; i < numObjs; i++)
     {
@@ -89,66 +157,78 @@ void initObj(){
           //The point should now be moved to the coordinate system of Pos.
           point = VectorAdd(objs[i].Pos,point);
           //now find the point with the smallest y value in this env.
+          if(minY> point.y){
+            minY = point.y;
+            minYpoint = point;
+          }
 
-          if (point.y <= -50.0f && i == segment){// && i == 0){
+          if (point.y < -50.0f){// && i == 0){
             vec3 n = SetVector(0,1,0);
-            vec3 r = VectorSub(point,objs[i].Pos);
+            vec3 r = VectorSub(minYpoint,VectorSub(objs[i].Pos,objs[i].massCenter));
             vec3 rxn = CrossProduct(r,n);
-            if(once){
-            objs[i].LinMom.y = 0.75f*fabsf(objs[i].LinMom.y);
+
+            objs[i].LinMom.y =0.75f*fabsf(objs[i].LinMom.y);
             objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
-            once = false;
-            }
 
             float t1 = DotProduct(objs[i].v,n);
-            float t2 = DotProduct(rxn,objs[i].omega);
+            float t2 = (100.0f/10.0f)*DotProduct(rxn,objs[i].omega);
             float t3 = 1.0f;
             float t4 = DotProduct(rxn,MultMat3Vec3(objs[i].InvI,rxn));
-            float Jmag = fabsf((t1+t2)/(t3+t4) * -(1 + ELASTICITY));
+            float Jmag = fabsf((t1+t2)/(t3+t4) * -(0.8f + ELASTICITY));
             printf("Jmag: %f \n",Jmag);
+
             objs[i].LinMom = VectorAdd(ScalarMult(n,Jmag),objs[i].LinMom);
 
             objs[i].T = CrossProduct(r,ScalarMult(n,Jmag));
 
             printf("%f \n",objs[i].LinMom.y);
+            printf("LinMom %f \n",objs[i].LinMom.y);
+            /*
+            if(objs[i].LinMom.y < 1.0f){
+            //objs[i].LinMom.y = 0;
+            objs[i].omega.x = 0;
+            objs[i].omega.y = 0;
+            objs[i].omega.z = 0;
+            objs[i].gravity = 0;
 
           }
+          */
+
         }
-        // this below does not work, using wrong coord system.
-
       }
-      objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
     }
-    //Collision tests
-    /*
-    for (int i = 0; i < numObjs; i++) {
-    for (int j = i+1 ; j < numObjs; j++) {
-    r = VectorSub(objs[i].Pos,objs[j].Pos);
-    if( Norm(r) < objs[i].radius + objs[j].radius){
-
-    //should be for every point on hull not numVertices
-    for(int k = 0;k < fragments[i].numOnHull;k++){
-    for(int l = 0;l < fragments[j].numOnHull;l++){
-
-    vec3 radiusi = ScalarMult(VectorSub(SetVector((fragments[i].pointsOnHull)[3*k],(fragments[i].pointsOnHull)[3*k+1],(fragments[i].pointsOnHull)[3*k+2]),objs[i].Pos),0.5);
-    vec3 radiusj = ScalarMult(VectorSub(SetVector((fragments[j].pointsOnHull)[3*l],(fragments[j].pointsOnHull)[3*l+1],(fragments[j].pointsOnHull)[3*l+2]),objs[j].Pos),0.5);
-    vec3 radiusd = VectorSub(VectorAdd(objs[i].Pos,radiusi),VectorAdd(objs[j].Pos,radiusj));
-
-    //collision
-    if( Norm(radiusd) < Norm(radiusi) + Norm(radiusj)){
-    /*
-    objs[i].Pos = VectorAdd(objs[i].Pos, ScalarMult(VectorSub(objs[i].Pos,objs[j].Pos),0.00006f));
-    objs[j].Pos = VectorAdd(objs[j].Pos, ScalarMult(VectorSub(objs[j].Pos,objs[i].Pos),0.00006f));
-    */
-    /*
-    imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
-    objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
-    objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
-
-    objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].LinMom);
-    objs[j].omega = MultMat3Vec3(InvertMat3(objs[j].I),objs[j].LinMom);
 
   }
+  //Collision tests
+  /*
+  for (int i = 0; i < numObjs; i++) {
+  for (int j = i+1 ; j < numObjs; j++) {
+  r = VectorSub(objs[i].Pos,objs[j].Pos);
+  if( Norm(r) < objs[i].radius + objs[j].radius){
+
+  //should be for every point on hull not numVertices
+  for(int k = 0;k < fragments[i].numOnHull;k++){
+  for(int l = 0;l < fragments[j].numOnHull;l++){
+
+  vec3 radiusi = ScalarMult(VectorSub(SetVector((fragments[i].pointsOnHull)[3*k],(fragments[i].pointsOnHull)[3*k+1],(fragments[i].pointsOnHull)[3*k+2]),objs[i].Pos),0.5);
+  vec3 radiusj = ScalarMult(VectorSub(SetVector((fragments[j].pointsOnHull)[3*l],(fragments[j].pointsOnHull)[3*l+1],(fragments[j].pointsOnHull)[3*l+2]),objs[j].Pos),0.5);
+  vec3 radiusd = VectorSub(VectorAdd(objs[i].Pos,radiusi),VectorAdd(objs[j].Pos,radiusj));
+
+  //collision
+  if( Norm(radiusd) < Norm(radiusi) + Norm(radiusj)){
+  /*
+  objs[i].Pos = VectorAdd(objs[i].Pos, ScalarMult(VectorSub(objs[i].Pos,objs[j].Pos),0.00006f));
+  objs[j].Pos = VectorAdd(objs[j].Pos, ScalarMult(VectorSub(objs[j].Pos,objs[i].Pos),0.00006f));
+  */
+  /*
+  imp = -(1.0f)*DotProduct(Normalize(r),VectorSub(objs[i].v,objs[j].v))/(1.0f/objs[i].mass + 1.0f/objs[j].mass);
+  objs[i].LinMom = VectorAdd(ScalarMult(Normalize(r), imp),objs[i].LinMom);
+  objs[j].LinMom = VectorAdd(ScalarMult(Normalize(r), -imp),objs[j].LinMom);
+
+  objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].LinMom);
+  objs[j].omega = MultMat3Vec3(InvertMat3(objs[j].I),objs[j].LinMom);
+
+}
 }
 }
 }
@@ -189,12 +269,12 @@ ball[i].F = ScalarMult(n,-DotProduct(n,ball[i].P)*0.2f);
 for (int i = 0; i < numObjs; i++)
 {
 
-  objs[i].LinMom.x *= 0.99f;
-  objs[i].LinMom.z *= 0.99f;
+  //objs[i].LinMom.x *= 0.98f;
+  //objs[i].LinMom.z *= 0.98f;
 
-  objs[i].AngMom.x *= 0.98f;
-  objs[i].AngMom.y *= 0.98f;
-  objs[i].AngMom.z *= 0.98f;
+  objs[i].AngMom.x *= 0.99f;
+  objs[i].AngMom.y *= 0.99f;
+  objs[i].AngMom.z *= 0.99f;
 
   vec3 dPos, dLinMom, dAngMom, dO;
   mat4 Rd;
@@ -202,9 +282,9 @@ for (int i = 0; i < numObjs; i++)
   // Note: omega is not set. How do you calculate it?
   objs[i].omega = MultMat3Vec3(InvertMat3(objs[i].I),objs[i].AngMom);
 
-  objs[i].omega.x *=100.0f;
-  objs[i].omega.y *=5.0f;
-  objs[i].omega.z *=5.0f;
+  //objs[i].omega.x *=50.0f;
+  //objs[i].omega.y *=50.0f;
+  //objs[i].omega.z *=5.0f;
   //		v := P * 1/mass
   objs[i].v = ScalarMult(objs[i].LinMom, 1.0/(objs[i].mass));
 
@@ -658,19 +738,19 @@ GLfloat shatterObj(mat4 viewMatrix,GLfloat timeScale){
   glUseProgram(objectProgram);
   glUniformMatrix4fv(glGetUniformLocation(objectProgram, "viewMatrix"), 1, GL_TRUE, viewMatrix.m);
 
-  //for (int k = 0; k < fragments[0].numFragments; k++) {
-  int k = segment;
-  //mat4 voroToRend = Mult(T(-1,-1,0),S(1.0f,1.0f,1));
-  //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
-  //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
-  mat4 rot = Mult(objs[k].Rot,T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z));
-  mat4 trans2 = Mult(T(100,1,85),Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f/50.0f),T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z)));
-  mat4 tot = Mult(trans2,rot);
-  glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, tot.m);
+  for (int k = 0; k < fragments[0].numFragments; k++) {
+    //int k = segment;
+    //mat4 voroToRend = Mult(T(-1,-1,0),S(1.0f,1.0f,1));
+    //mat4 rot = Mult(objs[k].Rot,Mult(T(fragments[k].center.x,fragments[k].center.y,fragments[k].center.z),voroToRend));
+    //mat4 trans2 = Mult(T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z),rot);
+    mat4 rot = Mult(objs[k].Rot,Mult(S(1.0f/50.0f,1.0f/50.0f,1.0f),T(-fragments[k].center.x,-fragments[k].center.y,-fragments[k].center.z)));
+    //mat4 trans2 = Mult(T(100,1,85),T(objs[k].Pos.x,objs[k].Pos.y,objs[k].Pos.z));
+    mat4 tot = Mult(Mult(T(objs[k].Pos.x/50.0f,objs[k].Pos.y/50.0f ,objs[k].Pos.z),T(100,1,85)),rot);
+    glUniformMatrix4fv(glGetUniformLocation(objectProgram, "mdlMatrix"), 1, GL_TRUE, tot.m);
 
-  DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
+    DrawModel(models[k],objectProgram,"inPosition","inNormal",NULL);
 
-  //}
+  }
 
   return timeScale;
 }

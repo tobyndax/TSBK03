@@ -35,6 +35,7 @@ private:
 	int screenW, screenH;
 
 	bool isRunning;
+	bool pause = true;
 
 	bool mouseHidden;
 
@@ -51,7 +52,7 @@ private:
 	myDrawable *skycube, *terrain, *box;
 
 	// References to shader programs:
-	GLuint terrainshader, skyshader;
+	GLuint terrainshader, skyshader,groundshader;
 
 	// Camera variables:
 	Camera* cam;

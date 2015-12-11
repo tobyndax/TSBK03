@@ -41,6 +41,9 @@ struct PhysicsObj
   mat3 InvI; //Inverse inertia
 
   GLfloat radius;
+  GLfloat gravity;
+
+  vec3 massCenter;
 };
 
 extern struct Fragment* fragments;

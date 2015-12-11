@@ -96,6 +96,7 @@ void init(void){
 
   viewPoint = SetVector(100.0f,0.0f,80.0f);
   camPosition = SetVector(100.0f,0.0f,90.0f);
+  //camPosition = SetVector(1,2,1);
   GLfloat y=getHeight(camPosition.x,camPosition.z,&ttex)+10;
   camPosition.y = y;
   viewPoint.y = y;
@@ -440,7 +441,7 @@ void mouse(int x, int y)
 
 int main(int argc, char **argv){
   printf("after alloc");
-  mainVoronoi(4);
+  mainVoronoi(40);
   testFragments(0);
 
   glutInit(&argc, argv);

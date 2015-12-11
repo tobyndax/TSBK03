@@ -3,11 +3,11 @@
 
 #include "myDrawable.h"
 
-#include "Utilities.h"
 #include "LoadTGA.h"
 
 #include "gtx/transform.hpp"
 #include "gtc/type_ptr.hpp"
+
 
 myDrawable::myDrawable(GLuint program)
 : program(program) {}
@@ -97,13 +97,13 @@ void Terrain::draw() {
 
 Box::Box(GLuint program, float s) : myDrawable(program) {
 
-	scaling = glm::mat4();
 	rotation = glm::mat4();
 	scaling = glm::mat4();
-	model = generateCube(s);
 	MTWMatrix = glm::scale(glm::vec3(1,1,1));
 	inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(MTWMatrix)));
 
+
+	model = loadCube("resources/cubeexp.obj");
 	// Initial one-time shader uploads.
 	// Light information:
 	glm::vec3 sunPos = { 0.58f, 0.58f, 0.58f }; // Since the sun is a directional source, this is the negative direction, not the position.
@@ -124,6 +124,33 @@ Box::Box(GLuint program, float s) : myDrawable(program) {
 
 
 }
+
+Box::Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body) : Box(program,1.0f){
+	//Handle the actual box added to the body.
+
+	addBody(body);
+
+	q3Transform tx;
+	q3Identity( tx );
+
+	q3BoxDef boxDef;
+
+	tx.position.x = trans.x;
+	tx.position.y = trans.y;
+	tx.position.z = trans.z;
+
+	boxDef.Set(tx, q3Vec3(ex.x,ex.y,ex.z));
+
+	body->AddBox(boxDef);
+
+	//Set the local transformations.
+	Box::translateLocal(trans.x,trans.y,trans.z);
+	rotation = glm::mat4();
+	scaling = glm::scale(ex/2.0f);
+	updateState();
+
+}
+
 using namespace glm;
 	void Box::scale(float x, float y, float z){
 		scaling = glm::scale(vec3(x,y,z));
@@ -153,8 +180,14 @@ using namespace glm;
 	}
 
 	void Box::draw() {
+		glUseProgram(program);
+
 		glm::mat4 total = translation*rotation*localTrans*scaling;
+
+		inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(total)));
+
+		glUniformMatrix3fv(glGetUniformLocation(program, "iNormalMatrixTrans"), 1, GL_FALSE, glm::value_ptr(inverseNormalMatrixTrans));
 		glUniformMatrix4fv(glGetUniformLocation(program, "MTWMatrix"), 1, GL_FALSE, glm::value_ptr(total));
-		DrawModel(model, program, "in_Position", NULL, NULL);
+		DrawModel(model, program, "in_Position","in_Normal", "in_TexCoord");
 
 	}

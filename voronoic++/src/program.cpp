@@ -4,6 +4,7 @@
 #include "program.h"
 
 #include "GL_utilities.h"
+#include "Utilities.h"
 
 #include "gtc/type_ptr.hpp"
 #include <iostream>
@@ -85,6 +86,8 @@ bool Program::init() {
 	// Load and compile shaders.
 	skyshader = loadShaders("src/shaders/skyshader.vert", "src/shaders/skyshader.frag");
 	terrainshader = loadShaders("src/shaders/terrainshader.vert", "src/shaders/terrainshader.frag");
+	groundshader = loadShaders("src/shaders/groundshader.vert", "src/shaders/groundshader.frag");
+	printProgramInfoLog(groundshader, "ground Init", NULL, NULL, NULL, NULL);
 	// Create drawables
 	skycube = new SkyCube(skyshader);
 	//
@@ -92,69 +95,42 @@ bool Program::init() {
 	//boxground->scale(500,0.5,500);
 	//boxes.push_back(boxground);
 
+	scene->SetGravity(q3Vec3(0,-9.82f*2.0f,0));
 
 
-
+	//----------Ground special case---------------
 	q3BodyDef bodyDef;
 	q3Body* body = scene->CreateBody( bodyDef );
 	q3BoxDef boxDef;
-	boxDef.SetRestitution( 0 );
+	boxDef.SetRestitution(0);
 	q3Transform tx;
-	q3Identity( tx );
-	boxDef.Set( tx, q3Vec3( 500.0f, 1.0f, 500.0f ) );
-	body->AddBox( boxDef );
+	q3Identity(tx);
+	boxDef.Set(tx,q3Vec3( 1500.0f, 10.0f, 1500.0f ) );
+	body->AddBox(boxDef);
+
+	Box* ground = new Box(groundshader,glm::vec3(0,0,0),glm::vec3(1500.0f,10.0f,1500.0f), body);
+
+	boxes.push_back(ground);
+	//-----------Bodies ----------------------------
 
 	bodyDef.bodyType = eDynamicBody;
 	bodyDef.position.Set( 0, 250.0f, 0 );
 	q3Body* body1 = scene->CreateBody( bodyDef );
 
+	bodyDef.bodyType = eDynamicBody;
+	bodyDef.position.Set( 0, 276.0f, 0 );
+	q3Body* body2 = scene->CreateBody( bodyDef );
 
-	tx.position.Set(0,-5.0f,0); // this is in body coordinates. (i.e one box at 5.0f and one box at 6.0f)
-	boxDef.Set( tx, q3Vec3( 10.0f, 10.0f, 10.0f )); //the latter vector here is the exapansion of the box.
-	body1->AddBox(boxDef);
+	//----------------------------------------------
+	for (int j = 0; j < 250; j++) {
+		bodyDef.position.Set( 0,10*(j+1), j );
+		q3Body* body1 = scene->CreateBody( bodyDef );
 
-	tx.position.Set(0,40.0f,0); // this is in body coordinates. (i.e one box at 5.0f and one box at 6.0f)
-	boxDef.Set( tx, q3Vec3( 10.0f, 10.0f, 10.0f )); //the latter vector here is the exapansion of the box.
-	body1->AddBox(boxDef);
-
-	tx.position.Set(0,40.0f,40.0f); // this is in body coordinates. (i.e one box at 5.0f and one box at 6.0f)
-	boxDef.Set( tx, q3Vec3( 10.0f, 10.0f, 10.0f )); //the latter vector here is the exapansion of the box.
-	body1->AddBox(boxDef);
-
-	Box* box = new Box(terrainshader,1.0f);
-	Box* box1 = new Box(terrainshader,1.0f);
-
-	Box* box2 = new Box(terrainshader,1.0f);
-	Box* box3 = new Box(terrainshader,1.0f);
-
-	box->addBody(body);
-	box->scale(250,1,250);
-	box->updateState();
-
-	box1->addBody(body1);
-	box1->scale(10,10,10);
-	box1->updateState();
-
-	box2->addBody(body1);
-	box2->scale(10,10,10);
-	box2->translateLocal(0,40.0f,0);
-	box2->updateState();
-
-
-	box3->addBody(body1);
-	box3->scale(10,10,10);
-	box3->translateLocal(0,40.0f,40.0f);
-	box3->updateState();
-
-
-
-
-	boxes.push_back(box);
-	boxes.push_back(box1);
-	boxes.push_back(box2);
-	boxes.push_back(box3);
-
-
+		for (int i = 0; i < 10; i = i + 10) {
+			Box* b = new Box(terrainshader,glm::vec3(0,0,0),glm::vec3(5.0f,5.0f,5.0f), body1);
+			boxes.push_back(b);
+		}
+	}
 
 
 
@@ -171,11 +147,12 @@ void Program::timeUpdate() {
 }
 
 void Program::update() {
-	scene->Step();
-	for(std::vector<Box*>::iterator it = boxes.begin(); it != boxes.end(); ++it) {
-		(*it)->updateState();
+	if(!pause){
+		scene->Step();
+		for(std::vector<Box*>::iterator it = boxes.begin(); it != boxes.end(); ++it) {
+			(*it)->updateState();
+		}
 	}
-
 }
 
 void Program::display() {
@@ -192,7 +169,6 @@ void Program::display() {
 	skycube->draw();
 
 	// ====================== Draw Terrain ==========================
-	glUseProgram(terrainshader);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -200,6 +176,7 @@ void Program::display() {
 		(*it)->draw();
 	}
 	cam->uploadCamData(terrainshader);
+	cam->uploadCamData(groundshader);
 
 	printError("After display: ");
 
@@ -248,6 +225,10 @@ void Program::handleKeypress(SDL_Event* event) {
 		case SDLK_ESCAPE:
 		isRunning = false;
 		break;
+		case SDLK_p:
+		pause = !pause;
+		break;
+
 		case SDLK_h:
 		cam->toggleFrozen();
 		mouseHidden = !mouseHidden;

@@ -66,6 +66,12 @@ Model* generateCube(GLfloat s) {
 	return LoadDataToModel(vertexArray, NULL, NULL, NULL, indexArray, 8, 6 * 2 * 3);
 }
 
+Model* loadCube(const char* name){
+
+	return LoadModelPlus(name);
+}
+
+
 //Only to be used for 'final destruction' of models. (they will not be renderable after this.)
 void releaseModel(Model* m) {
 	if (m != NULL) {

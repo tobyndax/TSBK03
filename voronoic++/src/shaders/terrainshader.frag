@@ -54,6 +54,10 @@ void main(void)
 	totalLight += diffLight;
 	totalLight += specLight;
 
-	out_Color = vec4(totalLight + 0.0000001f * out_TexCoord.s, 1);
-}
+	vec3 ourLight = max(0,dot(vec3(-1.0f,0.0f,-1.0f),out_Normal))*vec3(1,0.8f,1);
+	ourLight += max(0,dot(vec3(1.0f,1.0f,-1.0f),out_Normal))*vec3(0.75f,0.5f,1);
+	ourLight += max(0,dot(vec3(-1.0f,-1.0f,-1.0f),out_Normal))*vec3(1,1,1);
 
+
+	out_Color = vec4(totalLight, 1.0f);
+}

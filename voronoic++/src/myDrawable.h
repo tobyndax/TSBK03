@@ -8,6 +8,7 @@
 #include "glm.hpp"
 #include <q3.h>
 
+#include "Utilities.h"
 #include <vector>
 
 class myDrawable {
@@ -43,18 +44,21 @@ public:
 class Box : public myDrawable {
 private:
 
-	Model* model;
 	glm::mat3 inverseNormalMatrixTrans;
 	glm::mat4 translation;
 	glm::mat4 rotation;
 	glm::mat4 scaling;
 	q3Body* body;
 	glm::mat4 localTrans;
+	Model* model;
 
 public:
 
-	void addBody(q3Body* b){body = b;};
+
+
+	void addBody(q3Body* b){body = b;}
 	Box(GLuint program, float s);
+	Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body);
 	void rotate(float deg, float x, float y, float z);
 	virtual void draw();
 	void scale(float x, float y, float z);
@@ -64,6 +68,5 @@ public:
 	void translateLocal(float x, float y, float z);
 
 };
-
 
 #endif // DRAWABLE_H

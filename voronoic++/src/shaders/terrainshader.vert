@@ -17,6 +17,7 @@ uniform mat3 iNormalMatrixTrans;
 void main(void)
 {
 	out_Normal = iNormalMatrixTrans*in_Normal;
+	//out_Normal = in_Normal;
 	out_TexCoord = in_TexCoord;
 	out_ObjPos = vec3(MTWMatrix * vec4(in_Position, 1));
 

@@ -22,6 +22,7 @@ Model* generateCanvas();
 /// Returns a model that can be used for a skycube for example
 /// @return A cube of scale s
 Model* generateCube(GLfloat s);
+Model* loadCube(const char* name);
 
 /// @brief Frees the memory used by the model
 ///
@@ -33,7 +34,7 @@ void releaseModel(Model* m);
 
 /// @brief Converts string to floats
 ///
-/// Takes the pointer to the beginning of a string and reads a float, ignoring starting whitespace. 
+/// Takes the pointer to the beginning of a string and reads a float, ignoring starting whitespace.
 /// Handles sign and up to 9 decimals. Use strEnd to get a pointer to where the it stopped reading the string.
 /// Most of this code comes from StackOverflow
 /// @return A float value read from the string.
