@@ -205,7 +205,7 @@ glm::vec3 Frag::calcMassCenter(struct Fragment F){
 	return glm::vec3(xm,ym,zm);
 
 }
-
+/*
 std::vector<float> Frag::distances(struct Fragment F,glm::vec3 center){
 
 	glm::vec3 center = F.center;
@@ -214,10 +214,10 @@ std::vector<float> Frag::distances(struct Fragment F,glm::vec3 center){
 		ym +=  mass*(F.pointsOnHull[i*3 +1]);
 		zm +=  mass*(F.pointsOnHull[i*3 +2]);
 	}
-	
+
 	return std::vector<float> v{min,max};
 }
-
+*/
 Frag::Frag(GLuint program,GLuint boxprogram, struct Fragment frag,q3Scene* scene) : myDrawable(program) {
 	rotation = glm::mat4();
 	scaling = glm::mat4();

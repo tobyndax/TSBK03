@@ -91,7 +91,7 @@ private:
 	static const bool DEBUG_SEED = false;
 	static const bool DEBUG_HULL = true;
 
-	distances(struct Fragment F,glm::vec3 center);
+//	distances(struct Fragment F,glm::vec3 center);
 
 public:
 	Frag(GLuint program,GLuint boxprogram,struct Fragment frag,q3Scene* scene);
