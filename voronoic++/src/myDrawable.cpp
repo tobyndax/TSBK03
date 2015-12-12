@@ -3,7 +3,6 @@
 
 #include "myDrawable.h"
 
-#include "LoadTGA.h"
 
 #include "gtx/transform.hpp"
 #include "gtc/type_ptr.hpp"
@@ -151,43 +150,181 @@ Box::Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body) : Box(progr
 
 }
 
-using namespace glm;
-	void Box::scale(float x, float y, float z){
-		scaling = glm::scale(vec3(x,y,z));
+void Box::scale(float x, float y, float z){
+	scaling = glm::scale(glm::vec3(x,y,z));
+}
+
+void Box::rotate(float deg, float x, float y, float z){
+
+	rotation = glm::rotate(glm::mat4(), deg, glm::vec3(x, y, z));
+}
+
+void Box::translate(float x, float y, float z){
+	translation = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+}
+
+void Box::translateLocal(float x, float y, float z){
+	localTrans = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+}
+
+void Box::updateState(){
+	q3Transform tx = body->GetTransform();
+	translation = glm::translate(glm::mat4(1.0f), glm::vec3(tx.position.x, tx.position.y, tx.position.z));
+	glm::vec4 ex = glm::vec4(tx.rotation.ex.x,tx.rotation.ex.y,tx.rotation.ex.z,0.0f);
+	glm::vec4 ey = glm::vec4(tx.rotation.ey.x,tx.rotation.ey.y,tx.rotation.ey.z,0.0f);
+	glm::vec4 ez = glm::vec4(tx.rotation.ez.x,tx.rotation.ez.y,tx.rotation.ez.z,0.0f);
+	glm::vec4 e1 = glm::vec4(0,0,0,1);
+	rotation = glm::mat4(ex,ey,ez,e1);
+}
+
+void Box::draw() {
+	glUseProgram(program);
+
+	glm::mat4 total = translation*rotation*localTrans*scaling;
+
+	inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(total)));
+
+	glUniformMatrix3fv(glGetUniformLocation(program, "iNormalMatrixTrans"), 1, GL_FALSE, glm::value_ptr(inverseNormalMatrixTrans));
+	glUniformMatrix4fv(glGetUniformLocation(program, "MTWMatrix"), 1, GL_FALSE, glm::value_ptr(total));
+	DrawModel(model, program, "in_Position","in_Normal", "in_TexCoord");
+
+}
+
+
+glm::vec3 Frag::calcMassCenter(struct Fragment F){
+	float mass = 1.0f/(float)F.numOnHull;
+	float xm =0.0f;
+	float ym =0.0f;
+	float zm =0.0f;
+	glm::vec3 center = F.center;
+	for (int i = 0; i < F.numOnHull; i++) {
+		xm +=  mass*(F.pointsOnHull[i*3 +0]);
+		ym +=  mass*(F.pointsOnHull[i*3 +1]);
+		zm +=  mass*(F.pointsOnHull[i*3 +2]);
+	}
+	return glm::vec3(xm,ym,zm);
+
+}
+
+std::vector<float> Frag::distances(struct Fragment F,glm::vec3 center){
+
+	glm::vec3 center = F.center;
+	for (int i = 0; i < F.numOnHull; i++) {
+		xm +=  mass*(F.pointsOnHull[i*3 +0]);
+		ym +=  mass*(F.pointsOnHull[i*3 +1]);
+		zm +=  mass*(F.pointsOnHull[i*3 +2]);
+	}
+	
+	return std::vector<float> v{min,max};
+}
+
+Frag::Frag(GLuint program,GLuint boxprogram, struct Fragment frag,q3Scene* scene) : myDrawable(program) {
+	rotation = glm::mat4();
+	scaling = glm::mat4();
+	q3BodyDef bodyDef;
+	bodyDef.bodyType = eDynamicBody;
+	bodyDef.position.Set(0,0,0);
+
+
+	body = scene->CreateBody( bodyDef );
+
+	updateState();
+
+	if(DEBUG_SEED){
+		Box* b = new Box(boxprogram,glm::vec3(frag.center),glm::vec3(2.0f,2.0f,0.5f), body);
+		seed.push_back(b);
 	}
 
-	void Box::rotate(float deg, float x, float y, float z){
+	glm::vec3 center = calcMassCenter(frag);
+	Box* b = new Box(boxprogram,center,glm::vec3(2.0f,2.0f,0.5f), body);
+	cent.push_back(b);
 
-	 rotation = glm::rotate(mat4(), deg, glm::vec3(x, y, z));
+
+	MTWMatrix = glm::scale(glm::vec3(1,1,1));
+	inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(MTWMatrix)));
+
+	GLint verts = frag.numVertices;
+	model = LoadDataToModel(frag.vertices,frag.normals,NULL, NULL,frag.indicies,verts,verts);
+
+	// Initial one-time shader uploads.
+	// Light information:
+	glm::vec3 sunPos = { 0.58f, 0.58f, 0.58f }; // Since the sun is a directional source, this is the negative direction, not the position.
+	bool sunIsDirectional = 1;
+	float sunSpecularExponent = 50.0;
+	glm::vec3 sunColor = { 1.0f, 1.0f, 1.0f };
+	GLfloat sun_GLf[3] = { sunPos.x, sunPos.y, sunPos.z };
+
+	glUseProgram(program);
+	glUniform3fv(glGetUniformLocation(program, "lightSourcePos"), 1, sun_GLf);
+	glUniform1i(glGetUniformLocation(program, "isDirectional"), sunIsDirectional);
+	glUniform1fv(glGetUniformLocation(program, "specularExponent"), 1, &sunSpecularExponent);
+	GLfloat sunColor_GLf[3] = { sunColor.x, sunColor.y, sunColor.z };
+	glUniform3fv(glGetUniformLocation(program, "lightSourceColor"), 1, sunColor_GLf);
+
+	glUniformMatrix4fv(glGetUniformLocation(program, "MTWMatrix"), 1, GL_FALSE, glm::value_ptr(MTWMatrix));
+	glUniformMatrix3fv(glGetUniformLocation(program, "iNormalMatrixTrans"), 1, GL_FALSE, glm::value_ptr(inverseNormalMatrixTrans));
+
+
+}
+
+void Frag::draw(){
+
+	if(DEBUG_CENTER){
+		for(std::vector<Box*>::iterator it = cent.begin(); it !=  cent.end(); ++it) {
+			(*it)->updateState();
+			(*it)->draw();
+		}
 	}
 
-	void Box::translate(float x, float y, float z){
-		translation = glm::translate(mat4(1.0f), vec3(x, y, z));
+	if(DEBUG_SEED){
+		for(std::vector<Box*>::iterator it = seed.begin(); it != seed.end(); ++it) {
+			(*it)->updateState();
+			(*it)->draw();
+		}
+	}
+	if(DEBUG_HULL){
+		for(std::vector<Box*>::iterator it = hull.begin(); it != hull.end(); ++it) {
+			(*it)->updateState();
+			(*it)->draw();
+		}
 	}
 
-	void Box::translateLocal(float x, float y, float z){
-		localTrans = glm::translate(mat4(1.0f), vec3(x, y, z));
-	}
+	glUseProgram(program);
 
-	void Box::updateState(){
-		q3Transform tx = body->GetTransform();
-		translation = glm::translate(mat4(1.0f), vec3(tx.position.x, tx.position.y, tx.position.z));
-		vec4 ex = vec4(tx.rotation.ex.x,tx.rotation.ex.y,tx.rotation.ex.z,0.0f);
-		vec4 ey = vec4(tx.rotation.ey.x,tx.rotation.ey.y,tx.rotation.ey.z,0.0f);
-		vec4 ez = vec4(tx.rotation.ez.x,tx.rotation.ez.y,tx.rotation.ez.z,0.0f);
-		vec4 e1 = vec4(0,0,0,1);
-		rotation = mat4(ex,ey,ez,e1);
-	}
+	glm::mat4 total = translation*rotation;
 
-	void Box::draw() {
-		glUseProgram(program);
+	inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(total)));
 
-		glm::mat4 total = translation*rotation*localTrans*scaling;
+	glUniformMatrix3fv(glGetUniformLocation(program, "iNormalMatrixTrans"), 1, GL_FALSE, glm::value_ptr(inverseNormalMatrixTrans));
+	glUniformMatrix4fv(glGetUniformLocation(program, "MTWMatrix"), 1, GL_FALSE, glm::value_ptr(total));
+	DrawModel(model, program, "in_Position","in_Normal", "in_TexCoord");
 
-		inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(total)));
+}
 
-		glUniformMatrix3fv(glGetUniformLocation(program, "iNormalMatrixTrans"), 1, GL_FALSE, glm::value_ptr(inverseNormalMatrixTrans));
-		glUniformMatrix4fv(glGetUniformLocation(program, "MTWMatrix"), 1, GL_FALSE, glm::value_ptr(total));
-		DrawModel(model, program, "in_Position","in_Normal", "in_TexCoord");
 
-	}
+void Frag::scale(float x, float y, float z){
+	scaling = glm::scale(glm::vec3(x,y,z));
+}
+
+void Frag::rotate(float deg, float x, float y, float z){
+
+	rotation = glm::rotate(glm::mat4(), deg, glm::vec3(x, y, z));
+}
+
+void Frag::translate(float x, float y, float z){
+	translation = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+}
+
+void Frag::translateLocal(float x, float y, float z){
+	localTrans = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+}
+
+void Frag::updateState(){
+	q3Transform tx = body->GetTransform();
+	translation = glm::translate(glm::mat4(1.0f), glm::vec3(tx.position.x, tx.position.y, tx.position.z));
+	glm::vec4 ex = glm::vec4(tx.rotation.ex.x,tx.rotation.ex.y,tx.rotation.ex.z,0.0f);
+	glm::vec4 ey = glm::vec4(tx.rotation.ey.x,tx.rotation.ey.y,tx.rotation.ey.z,0.0f);
+	glm::vec4 ez = glm::vec4(tx.rotation.ez.x,tx.rotation.ez.y,tx.rotation.ez.z,0.0f);
+	glm::vec4 e1 = glm::vec4(0,0,0,1);
+	rotation = glm::mat4(ex,ey,ez,e1);
+}

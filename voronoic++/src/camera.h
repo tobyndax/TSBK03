@@ -53,7 +53,7 @@ public:
 	void updateVTP();
 	void uploadCamData(GLuint program);
 
-	glm::mat4* getWTV(); 
+	glm::mat4* getWTV();
 	glm::mat4* getVTP();
 	glm::vec3* getPos();
 	GLfloat getSpeed();

@@ -9,7 +9,11 @@ $SOURCEDIR = src
 
 CPP_FILES := $(wildcard src/*.cpp)
 
+
 OBJ_FILES_CPP := $(addprefix obj/,$(notdir $(CPP_FILES:.cpp=.o)))
+CPP_FILES += src/voronoi.c
+OBJ_FILES_CPP += obj/voronoi.o
+
 
 C_FILES_COMMON := $(wildcard src/common/*.c)
 
@@ -17,6 +21,7 @@ CPP_FILES_COMMON := $(wildcard src/common/*.cpp)
 
 OBJ_FILES_COMMON := $(addprefix obj/,$(notdir $(C_FILES_COMMON:.c=.o)))
 OBJ_FILES_COMMON += $(addprefix obj/,$(notdir $(CPP_FILES_COMMON:.cpp=.o)))
+
 
 INC = -Isrc/ -Isrc/common/ -Isrc/common/glm -Isrcqu3e
 MAIN = main.cpp
@@ -28,7 +33,6 @@ LINKS =  -framework OpenGL -framework GLUT -framework Cocoa -framework SDL2 -L/u
 endif
 
 GCC = g++ -Wall -pedantic -std=c++11 -g3
-
 #if Linux
 ifeq ($(PLATFORM),linux)
 INC += $(shell pkg-config --cflags sdl2)
@@ -43,7 +47,6 @@ all: $(OBJ_FILES_COMMON) $(OBJ_FILES_CPP)
 
 obj/%.o : src/common/%.c
 	$(GCC) -c -o $@ $< $(INC)
-
 
 obj/%.o : src/common/%.cpp
 	$(GCC) -c -o $@ $< $(INC)

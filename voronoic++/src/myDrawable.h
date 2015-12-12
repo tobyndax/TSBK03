@@ -7,9 +7,11 @@
 #include "loadobj.h"
 #include "glm.hpp"
 #include <q3.h>
+#include "LoadTGA.h"
 
 #include "Utilities.h"
 #include <vector>
+#include "voronoi.h"
 
 class myDrawable {
 protected:
@@ -54,8 +56,6 @@ private:
 
 public:
 
-
-
 	void addBody(q3Body* b){body = b;}
 	Box(GLuint program, float s);
 	Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body);
@@ -68,5 +68,45 @@ public:
 	void translateLocal(float x, float y, float z);
 
 };
+
+class Frag : public myDrawable {
+private:
+	glm::mat3 inverseNormalMatrixTrans;
+	glm::mat4 translation;
+	glm::mat4 rotation;
+	glm::mat4 scaling;
+	q3Body* body;
+	std::vector<Box*> seed;
+	std::vector<Box*> cent;
+	std::vector<Box*> hull;
+	glm::mat4 localTrans;
+	Model* model;
+
+	float* vertices;
+	float* normals;
+	GLuint* indicies;
+	glm::vec3 calcMassCenter(struct Fragment);
+
+	static const bool DEBUG_CENTER = true;
+	static const bool DEBUG_SEED = false;
+	static const bool DEBUG_HULL = true;
+
+	distances(struct Fragment F,glm::vec3 center);
+
+public:
+	Frag(GLuint program,GLuint boxprogram,struct Fragment frag,q3Scene* scene);
+	virtual void draw();
+
+	void rotate(float deg, float x, float y, float z);
+	void scale(float x, float y, float z);
+
+	void translate(float x, float y, float z);
+	void translateLocal(float x, float y, float z);
+
+	void updateState();
+};
+
+
+
 
 #endif // DRAWABLE_H

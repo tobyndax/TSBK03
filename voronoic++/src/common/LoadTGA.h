@@ -14,7 +14,7 @@ extern "C" {
 		#include <GL/glu.h>
 		#include <GL/glx.h>
 		#include <GL/glext.h>
-		
+
 	#else
 		#include "glew.h"
 	#endif
@@ -63,9 +63,9 @@ bool LoadTGATextureData(const char *filename, TextureData *texture);
 #define TGA_OK							 0
 
 // Save functions
-int SaveDataToTGA(char			*filename, 
-			 short int		width, 
-			 short int		height, 
+int SaveDataToTGA(char			*filename,
+			 short int		width,
+			 short int		height,
 			 unsigned char	pixelDepth,
 			 unsigned char	*imageData);
 void SaveTGA(TextureData *tex, char *filename);
@@ -76,4 +76,3 @@ void SaveFramebufferToTGA(char *filename, GLint x, GLint y, GLint w, GLint h);
 #endif
 
 #endif
-

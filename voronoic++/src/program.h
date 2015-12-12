@@ -39,6 +39,8 @@ private:
 
 	bool mouseHidden;
 
+	int numFrags = 100;
+
 	// Time variables
 	GLfloat currentTime;
 	GLfloat deltaTime;
@@ -52,12 +54,13 @@ private:
 	myDrawable *skycube, *terrain, *box;
 
 	// References to shader programs:
-	GLuint terrainshader, skyshader,groundshader;
+	GLuint terrainshader, skyshader,groundshader,boxshader;
 
 	// Camera variables:
 	Camera* cam;
 
 	std::vector<Box*> boxes;
+	std::vector<Frag*> frags;
 
 public:
 

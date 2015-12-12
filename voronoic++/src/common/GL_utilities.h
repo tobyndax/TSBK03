@@ -15,7 +15,7 @@ extern "C" {
 		#include <GL/glu.h>
 		#include <GL/glx.h>
 		#include <GL/glext.h>
-		
+
 	#else
 		#include "glew.h"
 	#endif

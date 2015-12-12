@@ -8,6 +8,7 @@
 
 #include "gtc/type_ptr.hpp"
 #include <iostream>
+#include "voronoi.h"
 
 Program::Program() {
 	screenW = 800;
@@ -80,6 +81,9 @@ bool Program::init() {
 
 	dumpInfo();
 
+	mainVoronoi(numFrags);
+
+
 	// Initial placement of camera.
 	cam = new Camera(glm::vec3(0.0f,500.0f,0.0f), &screenW, &screenH);
 
@@ -87,6 +91,8 @@ bool Program::init() {
 	skyshader = loadShaders("src/shaders/skyshader.vert", "src/shaders/skyshader.frag");
 	terrainshader = loadShaders("src/shaders/terrainshader.vert", "src/shaders/terrainshader.frag");
 	groundshader = loadShaders("src/shaders/groundshader.vert", "src/shaders/groundshader.frag");
+	boxshader = loadShaders("src/shaders/boxshader.vert", "src/shaders/boxshader.frag");
+
 	printProgramInfoLog(groundshader, "ground Init", NULL, NULL, NULL, NULL);
 	// Create drawables
 	skycube = new SkyCube(skyshader);
@@ -95,7 +101,7 @@ bool Program::init() {
 	//boxground->scale(500,0.5,500);
 	//boxes.push_back(boxground);
 
-	scene->SetGravity(q3Vec3(0,-9.82f*2.0f,0));
+	scene->SetGravity(q3Vec3(0,-9.82f/2.0f,0));
 
 
 	//----------Ground special case---------------
@@ -113,25 +119,10 @@ bool Program::init() {
 	boxes.push_back(ground);
 	//-----------Bodies ----------------------------
 
-	bodyDef.bodyType = eDynamicBody;
-	bodyDef.position.Set( 0, 250.0f, 0 );
-	q3Body* body1 = scene->CreateBody( bodyDef );
-
-	bodyDef.bodyType = eDynamicBody;
-	bodyDef.position.Set( 0, 276.0f, 0 );
-	q3Body* body2 = scene->CreateBody( bodyDef );
-
-	//----------------------------------------------
-	for (int j = 0; j < 250; j++) {
-		bodyDef.position.Set( 0,10*(j+1), j );
-		q3Body* body1 = scene->CreateBody( bodyDef );
-
-		for (int i = 0; i < 10; i = i + 10) {
-			Box* b = new Box(terrainshader,glm::vec3(0,0,0),glm::vec3(5.0f,5.0f,5.0f), body1);
-			boxes.push_back(b);
-		}
+	for (int i = 0; i < numFrags; i++) {
+		Frag* f = new Frag(terrainshader,boxshader,fragments[i],scene);
+		frags.push_back(f);
 	}
-
 
 
 	printError("After total init: ");
@@ -149,9 +140,13 @@ void Program::timeUpdate() {
 void Program::update() {
 	if(!pause){
 		scene->Step();
+		for(std::vector<Frag*>::iterator it = frags.begin(); it != frags.end(); ++it) {
+			(*it)->updateState();
+		}
 		for(std::vector<Box*>::iterator it = boxes.begin(); it != boxes.end(); ++it) {
 			(*it)->updateState();
 		}
+
 	}
 }
 
@@ -172,11 +167,16 @@ void Program::display() {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+	for(std::vector<Frag*>::iterator it = frags.begin(); it != frags.end(); ++it) {
+		(*it)->draw();
+	}
 	for(std::vector<Box*>::iterator it = boxes.begin(); it != boxes.end(); ++it) {
 		(*it)->draw();
 	}
+
 	cam->uploadCamData(terrainshader);
 	cam->uploadCamData(groundshader);
+	cam->uploadCamData(boxshader);
 
 	printError("After display: ");
 
@@ -225,6 +225,16 @@ void Program::handleKeypress(SDL_Event* event) {
 		case SDLK_ESCAPE:
 		isRunning = false;
 		break;
+
+		case SDLK_j:
+		scene->Step();
+		for(std::vector<Frag*>::iterator it = frags.begin(); it != frags.end(); ++it) {
+			(*it)->updateState();
+		}
+
+		break;
+
+
 		case SDLK_p:
 		pause = !pause;
 		break;

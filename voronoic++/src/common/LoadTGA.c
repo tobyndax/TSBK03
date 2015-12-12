@@ -14,7 +14,7 @@
 static bool gMipmap = true;
 
 // Note that turning mimpapping on and off refers to the loading stage only.
-// If you want to turn off mipmapping later, use 
+// If you want to turn off mipmapping later, use
 // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 void LoadTGASetMipmapping(bool active)
@@ -44,11 +44,11 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 	unsigned int b;
 	unsigned long row, rowLimit;
 	GLubyte pixelData[4];
-	
-	// Nytt fšr flipping-stšd 111114
+
+	// Nytt fï¿½r flipping-stï¿½d 111114
 	char flipped;
 	long step;
-	
+
 	FILE *file = fopen(filename, "rb");			// Open The TGA File
 	err = 0;
 	if (file == NULL) err = 1;				// Does File Even Exist?
@@ -61,7 +61,7 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 			)
 				err = 3; // Does The Header Match What We Want?
 	else if (fread(header, 1, sizeof(header), file) != sizeof(header)) err = 4; // If So Read Next 6 Header Bytes
-	
+
 	if (err != 0)
 	{
 		switch (err)
@@ -71,7 +71,7 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 			case 3: printf("unsupported format in %s\n", filename); break;
 			case 4: printf("could not read file %s\n", filename); break;
 		}
-		
+
 		if(file == NULL)		// Did The File Even Exist? *Added Jim Strong*
 			return false;
 		else
@@ -90,15 +90,15 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 		return false;
 	}
 	flipped = (header[5] & 32) != 0; // Testa om flipped
-	
+
 	w = 1;
 	while (w < texture->width) w = w << 1;
 	h = 1;
 	while (h < texture->height) h = h << 1;
 	texture->texWidth = (GLfloat)texture->width / w;
 	texture->texHeight = (GLfloat)texture->height / h;
-	
-	
+
+
 	texture->bpp = header[4];		// Grab The TGA's Bits Per Pixel (24 or 32)
 	bytesPerPixel = texture->bpp/8;		// Divide By 8 To Get The Bytes Per Pixel
 	imageSize = w * h * bytesPerPixel;	// Calculate The Memory Required For The TGA Data
@@ -194,7 +194,7 @@ bool LoadTGATexture(const char *filename, TextureData *texture)	// Loads A TGA F
 {
 	char ok;
 	GLuint type = GL_RGBA;		// Set The Default GL Mode To RBGA (32 BPP)
-	
+
 	ok = LoadTGATextureData(filename, texture);	// Loads A TGA File Into Memory
 	if (!ok)
 		return false;
@@ -213,13 +213,13 @@ bool LoadTGATexture(const char *filename, TextureData *texture)	// Loads A TGA F
 		type=GL_RGB;			// If So Set The 'type' To GL_RGB
 	}
 	glTexImage2D(GL_TEXTURE_2D, 0, type, texture->w, texture->h, 0, type, GL_UNSIGNED_BYTE, texture[0].imageData);
-	
+
 	if (gMipmap)
 	{
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);	// Linear Filtered
 	}
-	
+
 	return true;				// Texture Building Went Ok, Return True
 }
 
@@ -227,7 +227,7 @@ void LoadTGATextureSimple(const char *filename, GLuint *tex) // If you really on
 {
 	TextureData texture;
 	memset(&texture, 0, sizeof(texture)); // Bug fix 130905.
-	
+
 	if (LoadTGATexture(filename, &texture))
 	{
 		if(texture.imageData != NULL)
@@ -243,14 +243,14 @@ void LoadTGATextureSimple(const char *filename, GLuint *tex) // If you really on
 // Was tgaSave, found in some reusable code.
 // Limitation: Can NOT save with transparency! Only RGB, not RGBA!
 // But it should! Why not?
-int SaveDataToTGA(char			*filename, 
-			 short int		width, 
-			 short int		height, 
+int SaveDataToTGA(char			*filename,
+			 short int		width,
+			 short int		height,
 			 unsigned char	pixelDepth,
 			 unsigned char	*imageData)
 {
 	unsigned char cGarbage = 0, mode,aux; // type,
-	int i, w, ix; // row, bytesPerPixel, 
+	int i, w, ix; // row, bytesPerPixel,
 	FILE *file;
 	char /*GLubyte*/ TGAuncompressedheader[12]={ 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0};	// Uncompressed TGA Header
 
@@ -267,7 +267,7 @@ int SaveDataToTGA(char			*filename,
 	else
 		type = 3;
 	*/
-	
+
 // write the header
 	fwrite(&TGAuncompressedheader, 12, 1, file);
 	fwrite(&width, sizeof(short int), 1, file);
@@ -288,9 +288,9 @@ int SaveDataToTGA(char			*filename,
 // save the image data
 	w = 1;
 	while (w < width) w = w << 1;
-	//bytesPerPixel = pixelDepth/8;	
+	//bytesPerPixel = pixelDepth/8;
 	//row = width * bytesPerPixel;
-	
+
 // Write one row at a time
 	for (i = 0; i < height; i++)
 	{
@@ -309,7 +309,7 @@ int SaveDataToTGA(char			*filename,
 // Problem: Saves upside down!
 void SaveTGA(TextureData *tex, char *filename)
 {
-	SaveDataToTGA(filename, tex->width, tex->height, 
+	SaveDataToTGA(filename, tex->width, tex->height,
 			tex->bpp, tex->imageData);
 }
 
@@ -318,10 +318,8 @@ void SaveFramebufferToTGA(char *filename, GLint x, GLint y, GLint w, GLint h)
 	int err;
 	unsigned char *buffer = (unsigned char*)malloc(h*w*3);
 	glReadPixels(x, y, w, h, GL_RGB, GL_UNSIGNED_BYTE, buffer);
-	err = SaveDataToTGA(filename, w, h, 
+	err = SaveDataToTGA(filename, w, h,
 			3*8, buffer);
 	free(buffer);
 	printf("SaveDataToTGA returned %d\n", err);
 }
-
-
