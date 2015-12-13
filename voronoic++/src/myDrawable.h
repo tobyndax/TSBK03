@@ -91,10 +91,14 @@ private:
 
 	static const bool DEBUG_CENTER = false;
 	static const bool DEBUG_SEED = false;
-	static const bool DEBUG_HULL = true;
+	static const bool DEBUG_HULL = false;
+
+	glm::vec3 colPoint = glm::vec3{50,50,25};
+
+	glm::vec3 center;
 
 	void addHullBoxes(struct Fragment F);
-
+	q3BodyDef addDynamics(struct Fragment F,q3BodyDef bodyDef);
 public:
 	Frag(GLuint program,GLuint boxprogram,struct Fragment frag,q3Scene* scene);
 	virtual void draw();

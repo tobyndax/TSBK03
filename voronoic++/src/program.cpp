@@ -70,7 +70,7 @@ bool Program::init() {
 	glcontext = SDL_GL_CreateContext(screen);
 
 
-	SDL_SetRelativeMouseMode(SDL_FALSE);
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 	glClearColor(0.1f, 0.7f, 0.1f, 1.0f);
 	printError("After SDL init: ");
 
@@ -85,8 +85,8 @@ bool Program::init() {
 
 
 	// Initial placement of camera.
-	cam = new Camera(glm::vec3(0.0f,500.0f,0.0f), &screenW, &screenH);
-
+	cam = new Camera(glm::vec3(50.0f,50.0f,250.0f), &screenW, &screenH);
+	cam->rotate('x',90);
 	// Load and compile shaders.
 	skyshader = loadShaders("src/shaders/skyshader.vert", "src/shaders/skyshader.frag");
 	terrainshader = loadShaders("src/shaders/terrainshader.vert", "src/shaders/terrainshader.frag");

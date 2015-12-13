@@ -251,7 +251,7 @@ glm::vec3 Frag::calcMassCenter(struct Fragment F){
 		float xm =0.0f;
 		float ym =0.0f;
 		float zm =0.0f;
-		glm::vec3 center = F.center;
+
 		for (int i = 0; i < F.numOnHull; i++) {
 			xm +=  avg*(F.pointsOnHull[i*3 +0]);
 			ym +=  avg*(F.pointsOnHull[i*3 +1]);
@@ -266,11 +266,31 @@ glm::vec3 Frag::calcMassCenter(struct Fragment F){
 void Frag::addHullBoxes(struct Fragment F){
 		for (int i = 0; i < F.numOnHull-1; i++) {
 			glm::vec3 point = glm::vec3(F.pointsOnHull[i*3+0],F.pointsOnHull[i*3+1],F.pointsOnHull[i*3+2]);
+			glm::vec3 dir = point - center;
+			point -= dir*0.1f;
 			Box* b = new Box(boxprogram,point,glm::vec3(0.5f,0.5f,0.25f), body);
 			if(DEBUG_HULL){
 				hull.push_back(b);
 			}
 		}
+}
+
+q3BodyDef Frag::addDynamics(struct Fragment F,q3BodyDef bodyDef){
+	glm::vec3 dir = center - colPoint;
+	float distance = glm::length(dir);
+	dir = glm::normalize(dir);
+	glm::vec3 linMom = dir/distance * 1500.0f;
+
+	bodyDef.linearVelocity.Set(linMom.x/2,linMom.y/2,linMom.z);
+
+	float x = glm::dot(glm::vec3(1,0,0),dir);
+	float y = glm::dot(glm::vec3(0,1,0),dir);
+
+
+	bodyDef.angularVelocity.Set(y*1.5f,-x*1.5f,0);
+
+
+	return bodyDef;
 }
 
 
@@ -282,6 +302,9 @@ Frag::Frag(GLuint program,GLuint boxprogramIn, struct Fragment frag,q3Scene* sce
 	bodyDef.position.Set(0,5,0);
 
 	boxprogram = boxprogramIn;
+	center = calcMassCenter(frag);
+	bodyDef = addDynamics(frag,bodyDef);
+
 
 
 	body = scene->CreateBody( bodyDef );
@@ -293,12 +316,14 @@ Frag::Frag(GLuint program,GLuint boxprogramIn, struct Fragment frag,q3Scene* sce
 		seed.push_back(b);
 	}
 
-	glm::vec3 center = calcMassCenter(frag);
+	if(center.x == 0 && center.y == 0 ){
+		//remove if at origin. (shouldn't be any center there)
+	}else{
+
 	Box* b = new Box(boxprogram,center,glm::vec3(2.0f,2.0f,0.5f), body);
 	cent.push_back(b);
-
 	addHullBoxes(frag);
-
+	}
 
 	MTWMatrix = glm::scale(glm::vec3(1,1,1));
 	inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(MTWMatrix)));
