@@ -236,9 +236,12 @@ Frag::Frag(GLuint program,GLuint boxprogram, struct Fragment frag,q3Scene* scene
 	}
 
 	glm::vec3 center = calcMassCenter(frag);
+	if(center.x == 0 && center.y == 0 ){
+		//remove if at origin. (shouldn't be any center there)
+	}else{
 	Box* b = new Box(boxprogram,center,glm::vec3(2.0f,2.0f,0.5f), body);
 	cent.push_back(b);
-
+	}
 
 	MTWMatrix = glm::scale(glm::vec3(1,1,1));
 	inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(MTWMatrix)));
