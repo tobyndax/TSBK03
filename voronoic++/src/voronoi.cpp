@@ -6,7 +6,6 @@
 
 #ifdef __APPLE__
 #include <OpenGL/gl3.h>
-#include "mac/MicroGlut.h"
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
@@ -154,7 +153,7 @@ int ***my3DAllocation(size_t xlen, size_t ylen, size_t zlen)
 }
 
 struct Fragment* mainVoronoi(int numPoints){
-  GLfloat depth = 0.05f;
+  GLfloat depth = 0.7f;
   int pointsX[numPoints];// = {25,75,25,75,55,12,44,11,42,95,87};
   int pointsY[numPoints];// = {25,25,75,75,30,12,84,67,23,64,83};
 
