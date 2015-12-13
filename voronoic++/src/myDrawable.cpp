@@ -6,6 +6,7 @@
 
 #include "gtx/transform.hpp"
 #include "gtc/type_ptr.hpp"
+#include <iostream>
 
 
 myDrawable::myDrawable(GLuint program)
@@ -189,41 +190,98 @@ void Box::draw() {
 	DrawModel(model, program, "in_Position","in_Normal", "in_TexCoord");
 
 }
+void calcMassCenterP(struct Fragment F){
+
+	float A = 0;
+	float Cx = 0;
+	float Cy = 0;
+
+	for (int i = 0; i < F.numOnHull-1; i++) {
+		int j = i % (F.numOnHull-1);
+		float x1 = F.pointsOnHull[j*3+0];
+		float y1 = F.pointsOnHull[j*3+1];
+		float x2 = F.pointsOnHull[(j+1)*3+0];
+		float y2 = F.pointsOnHull[(j+1)*3+1];
+
+		std::cout <<"x1: " << x1 << "  x2: " << x2  <<"y1: " << y1 << "  y2: " << y2<< std::endl;
+
+		Cx += (x1 + x2)*(x1*y2 - x2*y1);
+		Cy += (y1 + y2)*(x1*y2 - x2*y1);
+
+		A  += (x1*y2 - x2*y1);
+	}
+
+	Cx /= (6.0f*A/2.0f);
+	Cy /= (6.0f*A/2.0f);
+	if (isnan(Cx))
+
+
+
+
+	std::cout <<"Cx: " << Cx << "  Cy: " << Cy << std::endl;
+}
 
 
 glm::vec3 Frag::calcMassCenter(struct Fragment F){
-	float mass = 1.0f/(float)F.numOnHull;
-	float xm =0.0f;
-	float ym =0.0f;
-	float zm =0.0f;
-	glm::vec3 center = F.center;
-	for (int i = 0; i < F.numOnHull; i++) {
-		xm +=  mass*(F.pointsOnHull[i*3 +0]);
-		ym +=  mass*(F.pointsOnHull[i*3 +1]);
-		zm +=  mass*(F.pointsOnHull[i*3 +2]);
-	}
-	return glm::vec3(xm,ym,zm);
 
-}
-/*
-std::vector<float> Frag::distances(struct Fragment F,glm::vec3 center){
+	float A = 0;
+	float Cx = 0;
+	float Cy = 0;
 
-	glm::vec3 center = F.center;
-	for (int i = 0; i < F.numOnHull; i++) {
-		xm +=  mass*(F.pointsOnHull[i*3 +0]);
-		ym +=  mass*(F.pointsOnHull[i*3 +1]);
-		zm +=  mass*(F.pointsOnHull[i*3 +2]);
+	for (int i = 0; i < F.numOnHull-1; i++) {
+		int j = i % (F.numOnHull-1);
+		float x1 = F.pointsOnHull[j*3+0];
+		float y1 = F.pointsOnHull[j*3+1];
+		float x2 = F.pointsOnHull[(j+1)*3+0];
+		float y2 = F.pointsOnHull[(j+1)*3+1];
+
+		//std::cout <<"x1: " << x1 << "  x2: " << x2  <<"y1: " << y1 << "  y2: " << y2<< std::endl;
+
+		Cx += (x1 + x2)*(x1*y2 - x2*y1);
+		Cy += (y1 + y2)*(x1*y2 - x2*y1);
+
+		A  += (x1*y2 - x2*y1);
 	}
 
-	return std::vector<float> v{min,max};
+	Cx /= (6.0f*A/2.0f);
+	Cy /= (6.0f*A/2.0f);
+	if (isnan(Cx)){
+		calcMassCenterP(F);
+		float avg = 1.0f/(float)F.numOnHull;
+		float xm =0.0f;
+		float ym =0.0f;
+		float zm =0.0f;
+		glm::vec3 center = F.center;
+		for (int i = 0; i < F.numOnHull; i++) {
+			xm +=  avg*(F.pointsOnHull[i*3 +0]);
+			ym +=  avg*(F.pointsOnHull[i*3 +1]);
+			zm +=  avg*(F.pointsOnHull[i*3 +2]);
+		}
+		return glm::vec3(xm,ym,zm);
+	}
+	return glm::vec3(Cx,Cy,0);
 }
-*/
-Frag::Frag(GLuint program,GLuint boxprogram, struct Fragment frag,q3Scene* scene) : myDrawable(program) {
+
+
+void Frag::addHullBoxes(struct Fragment F){
+		for (int i = 0; i < F.numOnHull-1; i++) {
+			glm::vec3 point = glm::vec3(F.pointsOnHull[i*3+0],F.pointsOnHull[i*3+1],F.pointsOnHull[i*3+2]);
+			Box* b = new Box(boxprogram,point,glm::vec3(0.5f,0.5f,0.25f), body);
+			if(DEBUG_HULL){
+				hull.push_back(b);
+			}
+		}
+}
+
+
+Frag::Frag(GLuint program,GLuint boxprogramIn, struct Fragment frag,q3Scene* scene) : myDrawable(program) {
 	rotation = glm::mat4();
 	scaling = glm::mat4();
 	q3BodyDef bodyDef;
 	bodyDef.bodyType = eDynamicBody;
-	bodyDef.position.Set(0,0,0);
+	bodyDef.position.Set(0,5,0);
+
+	boxprogram = boxprogramIn;
 
 
 	body = scene->CreateBody( bodyDef );
@@ -238,6 +296,8 @@ Frag::Frag(GLuint program,GLuint boxprogram, struct Fragment frag,q3Scene* scene
 	glm::vec3 center = calcMassCenter(frag);
 	Box* b = new Box(boxprogram,center,glm::vec3(2.0f,2.0f,0.5f), body);
 	cent.push_back(b);
+
+	addHullBoxes(frag);
 
 
 	MTWMatrix = glm::scale(glm::vec3(1,1,1));

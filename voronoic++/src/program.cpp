@@ -114,7 +114,7 @@ bool Program::init() {
 	boxDef.Set(tx,q3Vec3( 1500.0f, 10.0f, 1500.0f ) );
 	body->AddBox(boxDef);
 
-	Box* ground = new Box(groundshader,glm::vec3(0,0,0),glm::vec3(1500.0f,10.0f,1500.0f), body);
+	Box* ground = new Box(groundshader,glm::vec3(0,0,0),glm::vec3(1500.0f,5.0f,1500.0f), body);
 
 	boxes.push_back(ground);
 	//-----------Bodies ----------------------------
@@ -165,7 +165,7 @@ void Program::display() {
 
 	// ====================== Draw Terrain ==========================
 	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	for(std::vector<Frag*>::iterator it = frags.begin(); it != frags.end(); ++it) {
 		(*it)->draw();

@@ -39,7 +39,7 @@ private:
 
 	bool mouseHidden;
 
-	int numFrags = 100;
+	int numFrags = 25;
 
 	// Time variables
 	GLfloat currentTime;

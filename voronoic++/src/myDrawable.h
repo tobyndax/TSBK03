@@ -8,6 +8,7 @@
 #include "glm.hpp"
 #include <q3.h>
 #include "LoadTGA.h"
+#include <cmath>
 
 #include "Utilities.h"
 #include <vector>
@@ -81,17 +82,18 @@ private:
 	std::vector<Box*> hull;
 	glm::mat4 localTrans;
 	Model* model;
+	GLuint boxprogram;
 
 	float* vertices;
 	float* normals;
 	GLuint* indicies;
 	glm::vec3 calcMassCenter(struct Fragment);
 
-	static const bool DEBUG_CENTER = true;
+	static const bool DEBUG_CENTER = false;
 	static const bool DEBUG_SEED = false;
 	static const bool DEBUG_HULL = true;
 
-//	distances(struct Fragment F,glm::vec3 center);
+	void addHullBoxes(struct Fragment F);
 
 public:
 	Frag(GLuint program,GLuint boxprogram,struct Fragment frag,q3Scene* scene);
