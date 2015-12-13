@@ -27,7 +27,7 @@
 
 class Program {
 private:
-	q3Scene* scene = new q3Scene(1.0f/60.0f);
+	q3Scene* scene = new q3Scene(1.0f/30.0f);
 
 	SDL_Window *screen;
 	SDL_GLContext glcontext;
@@ -54,13 +54,15 @@ private:
 	myDrawable *skycube, *terrain, *box;
 
 	// References to shader programs:
-	GLuint terrainshader, skyshader,groundshader,boxshader;
+	GLuint fragshader, skyshader,groundshader,boxshader,ground2;
 
 	// Camera variables:
 	Camera* cam;
 
 	std::vector<Box*> boxes;
 	std::vector<Frag*> frags;
+
+	bool once =true;
 
 public:
 

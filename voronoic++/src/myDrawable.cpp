@@ -95,6 +95,37 @@ void Terrain::draw() {
 	}
 }
 
+Box::Box(GLuint program) : myDrawable(program){
+
+	rotation = glm::mat4();
+	scaling = glm::mat4();
+	MTWMatrix = glm::scale(glm::vec3(1,1,1));
+	inverseNormalMatrixTrans = glm::transpose(glm::inverse(glm::mat3(MTWMatrix)));
+
+
+	model = loadCube("resources/cubeexp.obj");
+	// Initial one-time shader uploads.
+	// Light information:
+	glm::vec3 sunPos = { 50.28f, 50.58f, 50.28f }; // Since the sun is a directional source, this is the negative direction, not the position.
+	bool sunIsDirectional = 1;
+	float sunSpecularExponent = 50.0;
+	glm::vec3 sunColor = { 65.0f, 105.0f, 225.0f};
+	sunColor /= 250.0f;
+	GLfloat sun_GLf[3] = { sunPos.x, sunPos.y, sunPos.z };
+
+	glUseProgram(program);
+	glUniform3fv(glGetUniformLocation(program, "lightSourcePos"), 1, sun_GLf);
+	glUniform1i(glGetUniformLocation(program, "isDirectional"), sunIsDirectional);
+	glUniform1fv(glGetUniformLocation(program, "specularExponent"), 1, &sunSpecularExponent);
+	GLfloat sunColor_GLf[3] = { sunColor.x, sunColor.y, sunColor.z };
+	glUniform3fv(glGetUniformLocation(program, "lightSourceColor"), 1, sunColor_GLf);
+
+	glUniformMatrix4fv(glGetUniformLocation(program, "MTWMatrix"), 1, GL_FALSE, glm::value_ptr(MTWMatrix));
+	glUniformMatrix3fv(glGetUniformLocation(program, "iNormalMatrixTrans"), 1, GL_FALSE, glm::value_ptr(inverseNormalMatrixTrans));
+
+
+}
+
 Box::Box(GLuint program, float s) : myDrawable(program) {
 
 	rotation = glm::mat4();
@@ -126,6 +157,32 @@ Box::Box(GLuint program, float s) : myDrawable(program) {
 }
 
 Box::Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body) : Box(program,1.0f){
+	//Handle the actual box added to the body.
+
+	addBody(body);
+
+	q3Transform tx;
+	q3Identity( tx );
+
+	q3BoxDef boxDef;
+
+	tx.position.x = trans.x;
+	tx.position.y = trans.y;
+	tx.position.z = trans.z;
+
+	boxDef.Set(tx, q3Vec3(ex.x,ex.y,ex.z));
+
+	body->AddBox(boxDef);
+
+	//Set the local transformations.
+	Box::translateLocal(trans.x,trans.y,trans.z);
+	rotation = glm::mat4();
+	scaling = glm::scale(ex/2.0f);
+	updateState();
+
+}
+
+Box::Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body, bool ground) : Box(program){
 	//Handle the actual box added to the body.
 
 	addBody(body);
@@ -235,7 +292,6 @@ glm::vec3 Frag::calcMassCenter(struct Fragment F){
 		float x2 = F.pointsOnHull[(j+1)*3+0];
 		float y2 = F.pointsOnHull[(j+1)*3+1];
 
-		//std::cout <<"x1: " << x1 << "  x2: " << x2  <<"y1: " << y1 << "  y2: " << y2<< std::endl;
 
 		Cx += (x1 + x2)*(x1*y2 - x2*y1);
 		Cy += (y1 + y2)*(x1*y2 - x2*y1);
@@ -246,7 +302,7 @@ glm::vec3 Frag::calcMassCenter(struct Fragment F){
 	Cx /= (6.0f*A/2.0f);
 	Cy /= (6.0f*A/2.0f);
 	if (isnan(Cx)){
-		calcMassCenterP(F);
+		//calcMassCenterP(F);
 		float avg = 1.0f/(float)F.numOnHull;
 		float xm =0.0f;
 		float ym =0.0f;
@@ -312,7 +368,7 @@ Frag::Frag(GLuint program,GLuint boxprogramIn, struct Fragment frag,q3Scene* sce
 	updateState();
 
 	if(DEBUG_SEED){
-		Box* b = new Box(boxprogram,glm::vec3(frag.center),glm::vec3(2.0f,2.0f,0.5f), body);
+		Box* b = new Box(boxprogram,glm::vec3(frag.center),glm::vec3(0.5f,0.5f,0.5f), body);
 		seed.push_back(b);
 	}
 
@@ -320,7 +376,7 @@ Frag::Frag(GLuint program,GLuint boxprogramIn, struct Fragment frag,q3Scene* sce
 		//remove if at origin. (shouldn't be any center there)
 	}else{
 
-	Box* b = new Box(boxprogram,center,glm::vec3(2.0f,2.0f,0.5f), body);
+	Box* b = new Box(boxprogram,center,glm::vec3(0.5f,0.5f,0.5f), body);
 	cent.push_back(b);
 	addHullBoxes(frag);
 	}
@@ -357,6 +413,7 @@ void Frag::draw(){
 	if(DEBUG_CENTER){
 		for(std::vector<Box*>::iterator it = cent.begin(); it !=  cent.end(); ++it) {
 			(*it)->updateState();
+			(*it)->scale(0.25f,0.25f,1);
 			(*it)->draw();
 		}
 	}
@@ -364,17 +421,20 @@ void Frag::draw(){
 	if(DEBUG_SEED){
 		for(std::vector<Box*>::iterator it = seed.begin(); it != seed.end(); ++it) {
 			(*it)->updateState();
+			(*it)->scale(0.25f,0.25f,1);
 			(*it)->draw();
 		}
 	}
 	if(DEBUG_HULL){
 		for(std::vector<Box*>::iterator it = hull.begin(); it != hull.end(); ++it) {
 			(*it)->updateState();
+			(*it)->scale(0.25f,0.25f,1);
 			(*it)->draw();
 		}
 	}
 
 	glUseProgram(program);
+
 
 	glm::mat4 total = translation*rotation;
 

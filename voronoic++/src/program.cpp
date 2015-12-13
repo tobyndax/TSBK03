@@ -82,17 +82,15 @@ bool Program::init() {
 	dumpInfo();
 
 	mainVoronoi(numFrags);
-
-
 	// Initial placement of camera.
 	cam = new Camera(glm::vec3(50.0f,50.0f,250.0f), &screenW, &screenH);
 	cam->rotate('x',90);
 	// Load and compile shaders.
 	skyshader = loadShaders("src/shaders/skyshader.vert", "src/shaders/skyshader.frag");
-	terrainshader = loadShaders("src/shaders/terrainshader.vert", "src/shaders/terrainshader.frag");
+	fragshader = loadShaders("src/shaders/terrainshader.vert", "src/shaders/terrainshader.frag");
 	groundshader = loadShaders("src/shaders/groundshader.vert", "src/shaders/groundshader.frag");
 	boxshader = loadShaders("src/shaders/boxshader.vert", "src/shaders/boxshader.frag");
-
+	ground2 = loadShaders("src/shaders/ground2.vert", "src/shaders/ground2.frag");
 	printProgramInfoLog(groundshader, "ground Init", NULL, NULL, NULL, NULL);
 	// Create drawables
 	skycube = new SkyCube(skyshader);
@@ -101,7 +99,7 @@ bool Program::init() {
 	//boxground->scale(500,0.5,500);
 	//boxes.push_back(boxground);
 
-	scene->SetGravity(q3Vec3(0,-9.82f/2.0f,0));
+	scene->SetGravity(q3Vec3(0,-9.82f*2.0f,0));
 
 
 	//----------Ground special case---------------
@@ -114,13 +112,18 @@ bool Program::init() {
 	boxDef.Set(tx,q3Vec3( 1500.0f, 10.0f, 1500.0f ) );
 	body->AddBox(boxDef);
 
-	Box* ground = new Box(groundshader,glm::vec3(0,0,0),glm::vec3(1500.0f,5.0f,1500.0f), body);
+	Box* ground = new Box(ground2,glm::vec3(0,0,0),glm::vec3(1500.0f,5.0f,1500.0f), body,true);
 
 	boxes.push_back(ground);
+
+	Box* square = new Box(fragshader,1.0f);
+	square->scale(50,50,1);
+	square->translate(50,55,0);
+	boxes.push_back(square);
 	//-----------Bodies ----------------------------
 
 	for (int i = 0; i < numFrags; i++) {
-		Frag* f = new Frag(terrainshader,boxshader,fragments[i],scene);
+		Frag* f = new Frag(fragshader,boxshader,fragments[i],scene);
 		frags.push_back(f);
 	}
 
@@ -174,9 +177,10 @@ void Program::display() {
 		(*it)->draw();
 	}
 
-	cam->uploadCamData(terrainshader);
+	cam->uploadCamData(fragshader);
 	cam->uploadCamData(groundshader);
 	cam->uploadCamData(boxshader);
+	cam->uploadCamData(ground2);
 
 	printError("After display: ");
 
@@ -234,6 +238,14 @@ void Program::handleKeypress(SDL_Event* event) {
 
 		break;
 
+		case SDLK_o:
+		if(!once){
+			break;
+		}
+		boxes.pop_back();
+		if(!Frag::DEBUG_SEED && !Frag::DEBUG_CENTER && !Frag::DEBUG_HULL)
+			pause = false;
+		break;
 
 		case SDLK_p:
 		pause = !pause;

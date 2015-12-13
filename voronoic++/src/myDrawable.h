@@ -58,8 +58,10 @@ private:
 public:
 
 	void addBody(q3Body* b){body = b;}
+	Box(GLuint program);
 	Box(GLuint program, float s);
 	Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body);
+	Box(GLuint program, glm::vec3 trans,glm::vec3 ex, q3Body* body,bool ground);
 	void rotate(float deg, float x, float y, float z);
 	virtual void draw();
 	void scale(float x, float y, float z);
@@ -89,9 +91,6 @@ private:
 	GLuint* indicies;
 	glm::vec3 calcMassCenter(struct Fragment);
 
-	static const bool DEBUG_CENTER = false;
-	static const bool DEBUG_SEED = false;
-	static const bool DEBUG_HULL = false;
 
 	glm::vec3 colPoint = glm::vec3{50,50,25};
 
@@ -100,6 +99,12 @@ private:
 	void addHullBoxes(struct Fragment F);
 	q3BodyDef addDynamics(struct Fragment F,q3BodyDef bodyDef);
 public:
+
+	static const bool DEBUG_CENTER = !true;
+	static const bool DEBUG_SEED = !true;
+	static const bool DEBUG_HULL = !true;
+
+
 	Frag(GLuint program,GLuint boxprogram,struct Fragment frag,q3Scene* scene);
 	virtual void draw();
 
